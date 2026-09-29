@@ -1,0 +1,6 @@
+@ZndAlhadedStore_HostAddress = http://localhost:5198
+
+GET {{ZndAlhadedStore_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
