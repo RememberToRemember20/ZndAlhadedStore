@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -7,6 +8,8 @@ using ZndAlhadedStore.AppDB;
 using ZndAlhadedStore.Identity;
 using ZndAlhadedStore.Implment;
 using ZndAlhadedStore.Interfaces;
+using ZndAlhadedStore.PermissionFoldar.Command;
+using ZndAlhadedStore.PermissionFoldar.Handler;
 using ZndAlhadedStore.Setting;
 
 namespace ZndAlhadedStore
@@ -37,6 +40,7 @@ namespace ZndAlhadedStore
                 options.User.RequireUniqueEmail = true;
             })
             .AddRoles<ApplicationRole>()
+             .AddSignInManager<SignInManager<ApplicationUser>>()
             .AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders();
 
@@ -56,6 +60,8 @@ namespace ZndAlhadedStore
             })
             .AddJwtBearer(options =>
             {
+                options.MapInboundClaims = false;  
+
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
@@ -76,6 +82,9 @@ namespace ZndAlhadedStore
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
             services.AddSingleton<ITokenService, TokenService>();
+            services.AddAuthorization();
+            services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+            services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>(); 
             return services;
         }
     }

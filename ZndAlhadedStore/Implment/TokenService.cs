@@ -71,9 +71,10 @@ namespace ZndAlhadedStore.Implment
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret)),
                 ValidateLifetime = false
             };
+            var tokenHandler = new JwtSecurityTokenHandler();
+            tokenHandler.InboundClaimTypeMap.Clear();
 
-            var principal = new JwtSecurityTokenHandler()
-                .ValidateToken(token, validationParameters, out var securityToken);
+            var principal = tokenHandler.ValidateToken(token, validationParameters, out var securityToken);
 
             if (securityToken is not JwtSecurityToken jwtToken ||
                 !jwtToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))

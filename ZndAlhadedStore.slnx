@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="AuthKit/AuthKit.csproj" Id="df548804-1927-4cb4-939d-78049b040d38" />
   <Project Path="Shared/Shared.csproj" Id="06a2b7e8-fdbc-42f9-ab84-3838fdeca040" />
   <Project Path="ZndAlhadedStore/ZndAlhadedStore.csproj" />
 </Solution>
