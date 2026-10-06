@@ -1,14 +1,19 @@
-﻿using MediatR;
+﻿using AuthKit.Features.Auth.Login.Command;
+using AuthKit.Features.Auth.Logout.Command;
+using AuthKit.Features.Auth.LogoutAll.Command;
+using AuthKit.Features.Auth.RefreshToken.Command;
+using AuthKit.Features.Auth.Register.Command;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+
 using Microsoft.AspNetCore.Mvc;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using ZndAlhadedStore.Auth.Command;
-using ZndAlhadedStore.UserCommandQueryHandler.Command;
+using ZndAlhadedStore.Identity;
 
 namespace ZndAlhadedStore.Controllers
 {
+    public record RegisterRequest(string Email, string Password, string FullName);
     public record LogoutRequest(string RefreshToken);
     [Route("api/[controller]")]
     [ApiController]
@@ -23,9 +28,18 @@ namespace ZndAlhadedStore.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register(RegisterCommand command)
+        public async Task<IActionResult> Register(RegisterRequest request)
         {
-            var result = await _sender.Send(command);
+            var user = new ApplicationUser
+            {
+                UserName = request.Email,
+                Email = request.Email,
+                FullName = request.FullName,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var result = await _sender.Send(new RegisterCommand<ApplicationUser, string>(user, request.Password));
             return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
         }
 

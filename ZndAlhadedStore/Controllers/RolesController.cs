@@ -1,11 +1,12 @@
-﻿using MediatR;
+﻿using AuthKit.Authorization.PermissionFoldar.Command;
+using AuthKit.Features.AccessControl.AssignPermissionToRole.Command;
+using AuthKit.Features.AccessControl.GetRolePermissions.Quey;
+using AuthKit.Features.AccessControl.GetRoles.Query;
+using AuthKit.Features.AccessControl.RevokePermissionFromRole;
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ZndAlhadedStore.Common;
-using ZndAlhadedStore.PermissionFoldar.Command;
-using ZndAlhadedStore.PermissionFoldar.Query;
-using ZndAlhadedStore.UserCommandQueryHandler.Role.Coomand;
-using ZndAlhadedStore.UserCommandQueryHandler.Role.Query;
 
 namespace ZndAlhadedStore.Controllers
 {

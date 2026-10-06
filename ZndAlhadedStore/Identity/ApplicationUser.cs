@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using AuthKit.Entities;
+using Microsoft.AspNetCore.Identity;
 using ZndAlhadedStore.Entity;
 
 namespace ZndAlhadedStore.Identity
@@ -11,6 +12,6 @@ namespace ZndAlhadedStore.Identity
 
         public ManagerProfile? ManagerProfile { get; set; }
         public EmployeeProfile? EmployeeProfile { get; set; }
-        public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+        public ICollection<RefreshToken<string>> RefreshTokens { get; set; } = new List<RefreshToken<string>>();
     }
 }

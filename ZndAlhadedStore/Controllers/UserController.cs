@@ -1,10 +1,9 @@
-﻿using MediatR;
+﻿using AuthKit.Authorization.PermissionFoldar.Command;
+using AuthKit.Features.AccessControl.AssignRole.Command;
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ZndAlhadedStore.Common;
-using ZndAlhadedStore.PermissionFoldar.Command;
-using ZndAlhadedStore.UserCommandQueryHandler.Query;
-using ZndAlhadedStore.UserCommandQueryHandler.Role.Coomand;
 
 namespace ZndAlhadedStore.Controllers
 {
@@ -24,12 +23,12 @@ namespace ZndAlhadedStore.Controllers
             var result = await _sender.Send(new AssignRoleCommand(userId, request.RoleName));
             return result.IsSuccess ? NoContent() : BadRequest(result.Error);
         }
-        [RequirePermission(Permissions.Users.ViewAll)]
-        [HttpGet]
-        public async Task<IActionResult> GetUsers()
-        {
-            var result = await _sender.Send(new GetUsersQuery());
-            return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
-        }
+        //[RequirePermission(Permissions.Users.ViewAll)]
+        //[HttpGet]
+        //public async Task<IActionResult> GetUsers()
+        //{
+        //    var result = await _sender.Send(new GetUsersQuery());
+        //    return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
+        //}
     }
 }

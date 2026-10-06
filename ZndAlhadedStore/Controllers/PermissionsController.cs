@@ -1,9 +1,9 @@
-﻿using MediatR;
+﻿using AuthKit.Authorization.PermissionFoldar.Command;
+using AuthKit.Features.AccessControl.GetPermissions.Query;
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ZndAlhadedStore.Common;
-using ZndAlhadedStore.PermissionFoldar.Command;
-using ZndAlhadedStore.PermissionFoldar.Query;
 
 namespace ZndAlhadedStore.Controllers
 {

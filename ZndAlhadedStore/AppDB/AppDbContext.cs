@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using AuthKit.Entities;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using ZndAlhadedStore.Entity;
 using ZndAlhadedStore.Identity;
@@ -11,26 +12,26 @@ namespace ZndAlhadedStore.AppDB
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
-            builder.Entity<RolePermission>(entity =>
+            builder.Entity<RolePermission<string>>(entity =>
             {
                 entity.HasKey(rp => new { rp.RoleId, rp.PermissionId });
 
-                entity.HasOne(rp => rp.Role)
-                      .WithMany(r => r.RolePermissions)
+                entity.HasOne<ApplicationRole>()
+                      .WithMany()
                       .HasForeignKey(rp => rp.RoleId);
 
-                entity.HasOne(rp => rp.Permission)
-                      .WithMany(p => p.RolePermissions)
+                entity.HasOne<Permission>()
+                      .WithMany()
                       .HasForeignKey(rp => rp.PermissionId);
             });
             builder.Entity<Permission>()
             .HasIndex(p => p.Name)
             .IsUnique();
-            builder.Entity<RefreshToken>()
-           .HasOne(rt => rt.User)
-           .WithMany(u => u.RefreshTokens)
-           .HasForeignKey(rt => rt.UserId)
-           .OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<RefreshToken<string>>()
+     .HasOne<ApplicationUser>()
+     .WithMany(u => u.RefreshTokens)
+     .HasForeignKey(rt => rt.UserId)
+     .OnDelete(DeleteBehavior.Cascade);
             builder.Entity<ManagerProfile>(entity =>
             {
                 entity.HasKey(m => m.UserId);
@@ -58,9 +59,9 @@ namespace ZndAlhadedStore.AppDB
         public DbSet<Product> Products { get; set; }
         public DbSet<Quote> Quotes { get; set; }
         public DbSet<QuoteItem> QuoteItems { get; set; }
-        public DbSet<Permission> Permissions { get; set; }
-        public DbSet<RolePermission> RolePermissions {  get; set; }
-        public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<Permission> Permissions => Set<Permission>();
+        public DbSet<RolePermission<string>> RolePermissions => Set<RolePermission<string>>();
+        public DbSet<RefreshToken<string>> RefreshTokens => Set<RefreshToken<string>>();
         public DbSet<ManagerProfile> ManagerProfiles { get; set; }
         public DbSet<EmployeeProfile> EmployeeProfiles { get; set; }
     }

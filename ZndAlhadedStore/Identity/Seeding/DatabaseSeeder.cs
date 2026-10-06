@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using AuthKit.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ZndAlhadedStore.AppDB;
 using ZndAlhadedStore.Common;
@@ -53,7 +54,7 @@ namespace ZndAlhadedStore.Identity.Seeding
 
             var missingIds = allPermissionIds.Except(linkedPermissionIds);
             foreach (var permissionId in missingIds)
-                dbContext.RolePermissions.Add(new RolePermission { RoleId = adminRole.Id, PermissionId = permissionId });
+                dbContext.RolePermissions.Add(new RolePermission<string> { RoleId = adminRole.Id, PermissionId = permissionId });
 
             await dbContext.SaveChangesAsync();
         }

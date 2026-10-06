@@ -1,16 +1,21 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Auth.Middlewares;
+using AuthKit.Extensions;
+using AuthKit.Services.Implementations;
+using AuthKit.Services.Interfaces;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Reflection;
 using System.Text;
 using ZndAlhadedStore.AppDB;
+using ZndAlhadedStore.ClaimsProvider;
 using ZndAlhadedStore.Identity;
 using ZndAlhadedStore.Implment;
 using ZndAlhadedStore.Interfaces;
-using ZndAlhadedStore.PermissionFoldar.Command;
-using ZndAlhadedStore.PermissionFoldar.Handler;
-using ZndAlhadedStore.Setting;
+using ZndAlhadedStore.UserAccess;
+
 
 namespace ZndAlhadedStore
 {
@@ -25,6 +30,7 @@ namespace ZndAlhadedStore
         }
         public static IServiceCollection AddIdentityServices(this IServiceCollection services)
         {
+            services.AddDataProtection();
             services.AddIdentityCore<ApplicationUser>(options =>
             {
                 options.Password.RequiredLength = 8;
@@ -46,45 +52,22 @@ namespace ZndAlhadedStore
 
             return services;
         }
-        public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
-        {
-            var jwtSettings = configuration.GetSection("Jwt").Get<JwtSettings>()
-                ?? throw new InvalidOperationException("Jwt settings are not configured.");
-
-            services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
-
-            services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-            .AddJwtBearer(options =>
-            {
-                options.MapInboundClaims = false;  
-
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidIssuer = jwtSettings.Issuer,
-                    ValidateAudience = true,
-                    ValidAudience = jwtSettings.Audience,
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
-                    ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero
-                };
-            });
-
-            services.AddAuthorization();
-            return services;
-        }
-
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
-            services.AddSingleton<ITokenService, TokenService>();
-            services.AddAuthorization();
-            services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
-            services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>(); 
+            services.AddSingleton<ICustomClaimsProvider<ApplicationUser>, AppCustomClaimsProvider>();
+            services.AddSingleton<IUserAccessGuard<ApplicationUser>, AppUserAccessGuard>();
+
+            services.AddAuthKitCore<ApplicationUser, ApplicationRole, string, AppDbContext>();   // دلوقتي بيسجل كل حاجة
+
+            services.AddMediatR(cfg =>
+            {
+                cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
+                cfg.AddOpenBehavior(typeof(AuthKit.Common.Behaviors.ValidationBehavior<,>));
+            });
+
+            services.AddExceptionHandler<GlobalExceptionHandler>();
+            services.AddProblemDetails();
+
             return services;
         }
     }
