@@ -3,13 +3,17 @@ using AuthKit.Features.AccessControl.AssignPermissionToRole.Command;
 using AuthKit.Features.AccessControl.GetRolePermissions.Quey;
 using AuthKit.Features.AccessControl.GetRoles.Query;
 using AuthKit.Features.AccessControl.RevokePermissionFromRole;
+using AuthKit.Features.Auth.Role.Command;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ZndAlhadedStore.Common;
+using ZndAlhadedStore.Identity;
 
 namespace ZndAlhadedStore.Controllers
 {
+    public record CreateRoleRequest(string Name, string? Description);
+    public record UpdateRoleRequest(string NewName);
     public record AssignPermissionRequest(int PermissionId);
     [Route("api/[controller]")]
     [ApiController]
@@ -48,6 +52,29 @@ namespace ZndAlhadedStore.Controllers
         {
             var result = await _sender.Send(new RevokePermissionFromRoleCommand(roleId, permissionId));
             return result.IsSuccess ? NoContent() : BadRequest(result.Error);
+        }
+        [RequirePermission(Permissions.Roles.Manage)]
+        [HttpPut("{roleId}")]
+        public async Task<IActionResult> UpdateRole(string roleId, UpdateRoleRequest request)
+        {
+            var result = await _sender.Send(new UpdateRoleCommand<ApplicationRole, string>(roleId, request.NewName));
+            return result.IsSuccess ? NoContent() : BadRequest(result.Error);
+        }
+
+        [RequirePermission(Permissions.Roles.Manage)]
+        [HttpDelete("{roleId}")]
+        public async Task<IActionResult> DeleteRole(string roleId)
+        {
+            var result = await _sender.Send(new DeleteRoleCommand<string>(roleId));
+            return result.IsSuccess ? NoContent() : BadRequest(result.Error);
+        }
+        [RequirePermission(Permissions.Roles.Manage)]
+        [HttpPost]
+        public async Task<IActionResult> CreateRole(CreateRoleRequest request)
+        {
+            var role = new ApplicationRole { Name = request.Name, Description = request.Description };
+            var result = await _sender.Send(new CreateRoleCommand<ApplicationRole, string>(role));
+            return result.IsSuccess ? Ok(new { RoleId = result.Value }) : BadRequest(result.Error);
         }
 
     }

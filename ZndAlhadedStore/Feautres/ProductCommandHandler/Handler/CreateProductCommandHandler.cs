@@ -1,12 +1,12 @@
 ﻿using MediatR;
 using ZndAlhadedStore.AppDB;
 using ZndAlhadedStore.Interfaces;
-using ZndAlhadedStore.ProductCommandHandler.Command;
 using Shared.DTOs;
 using AutoMapper;
 using ZndAlhadedStore.Entity;
+using ZndAlhadedStore.Feautres.ProductCommandHandler.Command;
 
-namespace ZndAlhadedStore.ProductCommandHandler.Handler
+namespace ZndAlhadedStore.Feautres.ProductCommandHandler.Handler
 {
     public class CreateProductCommandHandler:IRequestHandler<CreateProductCommand,GetProductDTO>
     {

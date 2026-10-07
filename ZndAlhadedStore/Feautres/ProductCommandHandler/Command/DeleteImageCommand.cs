@@ -1,6 +1,6 @@
 ﻿using MediatR;
 
-namespace ZndAlhadedStore.ProductCommandHandler.Command
+namespace ZndAlhadedStore.Feautres.ProductCommandHandler.Command
 {
     public record DeleteImageCommand:IRequest<string>
     {

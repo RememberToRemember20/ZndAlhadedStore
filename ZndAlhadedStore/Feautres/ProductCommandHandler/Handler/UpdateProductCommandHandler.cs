@@ -5,9 +5,9 @@ using Microsoft.Identity.Client;
 using Shared.DTOs;
 using System.Runtime.CompilerServices;
 using ZndAlhadedStore.AppDB;
-using ZndAlhadedStore.ProductCommandHandler.Command;
+using ZndAlhadedStore.Feautres.ProductCommandHandler.Command;
 
-namespace ZndAlhadedStore.ProductCommandHandler.Handler
+namespace ZndAlhadedStore.Feautres.ProductCommandHandler.Handler
 {
     public class UpdateProductCommandHandler:IRequestHandler<UpdateProductCommand,GetProductDTO>
     {

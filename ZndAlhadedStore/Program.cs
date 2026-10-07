@@ -1,3 +1,4 @@
+using AuthKit.Extensions;
 using FluentValidation;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -33,6 +34,7 @@ builder.Services.AddMediatR(cfg =>
 builder.Services.AddProblemDetails();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
 //builder.Services.AddScoped<IAuthTokenIssuer, AuthTokenIssuer>();
+builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddPersistence(builder.Configuration);
 builder.Services.AddIdentityServices();
 builder.Services.AddApplicationServices();

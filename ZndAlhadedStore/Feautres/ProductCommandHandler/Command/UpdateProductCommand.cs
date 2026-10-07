@@ -1,7 +1,7 @@
 ﻿using MediatR;
 using Shared.DTOs;
 
-namespace ZndAlhadedStore.ProductCommandHandler.Command
+namespace ZndAlhadedStore.Feautres.ProductCommandHandler.Command
 {
     public record UpdateProductCommand:IRequest<GetProductDTO>
     {

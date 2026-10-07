@@ -3,10 +3,10 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Shared.DTOs;
 using ZndAlhadedStore.AppDB;
+using ZndAlhadedStore.Feautres.ProductCommandHandler.Command;
 using ZndAlhadedStore.Interfaces;
-using ZndAlhadedStore.ProductCommandHandler.Command;
 
-namespace ZndAlhadedStore.ProductCommandHandler.Handler
+namespace ZndAlhadedStore.Feautres.ProductCommandHandler.Handler
 {
     public class DeleteProductByIdCommandHandler:IRequestHandler<DeleteProductByIdCommand, GetProductDTO>
     {

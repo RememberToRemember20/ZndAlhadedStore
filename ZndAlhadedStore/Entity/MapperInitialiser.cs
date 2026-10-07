@@ -1,8 +1,8 @@
 ﻿using AutoMapper;
 
 using Shared.DTOs;
+using ZndAlhadedStore.Feautres.ProductCommandHandler.Command;
 using ZndAlhadedStore.ImageResolver;
-using ZndAlhadedStore.ProductCommandHandler.Command;
 
 
 namespace ZndAlhadedStore.Entity.DTOs

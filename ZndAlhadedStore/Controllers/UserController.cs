@@ -1,5 +1,6 @@
 ﻿using AuthKit.Authorization.PermissionFoldar.Command;
 using AuthKit.Features.AccessControl.AssignRole.Command;
+using AuthKit.Features.AccessControl.RemoveRoleFromUser.Command;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -23,12 +24,19 @@ namespace ZndAlhadedStore.Controllers
             var result = await _sender.Send(new AssignRoleCommand(userId, request.RoleName));
             return result.IsSuccess ? NoContent() : BadRequest(result.Error);
         }
-        //[RequirePermission(Permissions.Users.ViewAll)]
-        //[HttpGet]
-        //public async Task<IActionResult> GetUsers()
-        //{
-        //    var result = await _sender.Send(new GetUsersQuery());
-        //    return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
-        //}
+        [RequirePermission(Permissions.Users.ManageRoles)]
+        [HttpDelete("{userId}/roles/{roleName}")]
+        public async Task<IActionResult> RemoveRole(string userId, string roleName)
+        {
+            var result = await _sender.Send(new RemoveRoleFromUserCommand(userId, roleName));
+            return result.IsSuccess ? NoContent() : BadRequest(result.Error);
+        }
+        [RequirePermission(Permissions.Users.ViewAll)]
+        [HttpGet]
+        public async Task<IActionResult> GetUsers()
+        {
+            var result = await _sender.Send(new GetUsersQuery());
+            return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
+        }
     }
 }

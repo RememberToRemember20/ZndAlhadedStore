@@ -1,7 +1,7 @@
 ﻿using MediatR;
 using Shared.DTOs;
 
-namespace ZndAlhadedStore.ProductCommandHandler.Query
+namespace ZndAlhadedStore.Feautres.ProductCommandHandler.Query
 {
     public record GetProductByIdQuery:IRequest<GetProductDTO>
     {

@@ -13,6 +13,8 @@ using AuthKit.Features.AccessControl.GetRolePermissions.Handler;
 using AuthKit.Features.AccessControl.GetRolePermissions.Quey;
 using AuthKit.Features.AccessControl.GetRoles.Handler;
 using AuthKit.Features.AccessControl.GetRoles.Query;
+using AuthKit.Features.AccessControl.RemoveRoleFromUser.Command;
+using AuthKit.Features.AccessControl.RemoveRoleFromUser.Handler;
 using AuthKit.Features.AccessControl.RevokePermissionFromRole;
 using AuthKit.Features.Auth.Login.Command;
 using AuthKit.Features.Auth.Login.Handler;
@@ -24,6 +26,8 @@ using AuthKit.Features.Auth.RefreshToken.Command;
 using AuthKit.Features.Auth.RefreshToken.Handler;
 using AuthKit.Features.Auth.Register.Command;
 using AuthKit.Features.Auth.Register.Handler;
+using AuthKit.Features.Auth.Role.Command;
+using AuthKit.Features.Auth.Role.Handler;
 using AuthKit.Services.Implementations;
 using AuthKit.Services.Interfaces;
 using AuthKit.Settings;
@@ -118,7 +122,16 @@ namespace AuthKit.Extensions
 
             services.AddScoped<IRequestHandler<RevokePermissionFromRoleCommand, Result>, RevokePermissionFromRoleCommandHandler<TRole, TKey, TContext>>();
 
+            services.AddScoped<IRequestHandler<CreateRoleCommand<TRole, TKey>, Result<TKey>>, CreateRoleCommandHandler<TRole, TKey>>();
+            services.AddScoped<IValidator<CreateRoleCommand<TRole, TKey>>, CreateRoleCommandValidator<TRole, TKey>>();
 
+            services.AddScoped<IRequestHandler<UpdateRoleCommand<TRole, TKey>, Result>, UpdateRoleCommandHandler<TRole, TKey>>();
+            services.AddScoped<IValidator<UpdateRoleCommand<TRole, TKey>>, UpdateRoleCommandValidator<TRole, TKey>>();
+
+            services.AddScoped<IRequestHandler<DeleteRoleCommand<TKey>, Result>, DeleteRoleCommandHandler<TUser, TRole, TKey>>();
+
+            services.AddScoped<IRequestHandler<RemoveRoleFromUserCommand, Result>, RemoveRoleFromUserCommandHandler<TUser, TKey>>();
+            services.AddScoped<IRequestHandler<RegisterCommand<TUser, TKey>, Result<AuthResult>>, RegisterCommandHandler<TUser, TKey, TContext>>();
             return services;
         }
     }
