@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Shared.DTOs;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ZndAlhadedStore.Entity
@@ -18,7 +19,10 @@ namespace ZndAlhadedStore.Entity
         [ForeignKey(nameof(Quote))]
         public int QuoteId { get; set; }
         public Quote Quote { get; set; }
+        public Currency ProductCurrency { get; set; }
         public int Count { get; set; }
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal Discount { get; set; }
 
     }
 }

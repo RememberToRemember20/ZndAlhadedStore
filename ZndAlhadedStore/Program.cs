@@ -2,6 +2,7 @@ using AuthKit.Extensions;
 using FluentValidation;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using System.Net;
 using System.Reflection;
 using ZndAlhadedStore;
 using ZndAlhadedStore.AppDB;
@@ -38,7 +39,16 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddPersistence(builder.Configuration);
 builder.Services.AddIdentityServices();
 builder.Services.AddApplicationServices();
+builder.Services.AddAuthRateLimiting();
+builder.Services.AddEmailSending(builder.Configuration, builder.Environment);
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
 
+    var proxies = builder.Configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? [];
+    foreach (var proxy in proxies)
+        options.KnownProxies.Add(IPAddress.Parse(proxy));
+});
 
 var app = builder.Build();
 
@@ -57,7 +67,15 @@ using (var scope = app.Services.CreateScope())
     await DatabaseSeeder.SeedAsync(scope.ServiceProvider);
 }
 app.UseExceptionHandler();
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
 app.UseHttpsRedirection();
+app.UseCors();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization(); 
 app.MapControllers();

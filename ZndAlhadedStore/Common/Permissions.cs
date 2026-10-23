@@ -7,6 +7,7 @@
             public const string Create = "Users.Create";
             public const string ViewAll = "Users.ViewAll";
             public const string ManageRoles = "Users.ManageRoles";
+            public const string SetActive = "Users.SetActive";
         }
         public static class Roles
         {

@@ -16,7 +16,9 @@ namespace ZndAlhadedStore.Entity
         public decimal TotalUSD { get; set;  }
         public int TotalQuantity { get; set; }
         public int ClientId { get; set; }
-        public Client Client { get; set; }  
+        public Client Client { get; set; }
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal Discount { get; set; }
         public ICollection<QuoteItem> QuoteItems { get; set; }
 
     }

@@ -16,18 +16,23 @@ using AuthKit.Features.AccessControl.GetRoles.Query;
 using AuthKit.Features.AccessControl.RemoveRoleFromUser.Command;
 using AuthKit.Features.AccessControl.RemoveRoleFromUser.Handler;
 using AuthKit.Features.AccessControl.RevokePermissionFromRole;
+using AuthKit.Features.Auth.Email.Command;
+using AuthKit.Features.Auth.Email.Handler;
 using AuthKit.Features.Auth.Login.Command;
 using AuthKit.Features.Auth.Login.Handler;
 using AuthKit.Features.Auth.Logout.Command;
 using AuthKit.Features.Auth.Logout.Handler;
 using AuthKit.Features.Auth.LogoutAll.Command;
 using AuthKit.Features.Auth.LogoutAll.Handler;
+using AuthKit.Features.Auth.Password.Command;
+using AuthKit.Features.Auth.Password.Handler;
 using AuthKit.Features.Auth.RefreshToken.Command;
 using AuthKit.Features.Auth.RefreshToken.Handler;
 using AuthKit.Features.Auth.Register.Command;
 using AuthKit.Features.Auth.Register.Handler;
 using AuthKit.Features.Auth.Role.Command;
 using AuthKit.Features.Auth.Role.Handler;
+using AuthKit.Models;
 using AuthKit.Services.Implementations;
 using AuthKit.Services.Interfaces;
 using AuthKit.Settings;
@@ -35,13 +40,17 @@ using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
-using Shared.DTOs.Auth;
+
 using System.Text;
+using System.Threading.RateLimiting;
 
 namespace AuthKit.Extensions
 {
@@ -96,7 +105,7 @@ namespace AuthKit.Extensions
             services.AddSingleton<ITokenService<TUser, TKey>, TokenService<TUser, TKey>>();
             services.AddScoped<IAuthTokenIssuer<TUser, TKey>, AuthTokenIssuer<TUser, TRole, TKey, TContext>>();
 
-            services.AddScoped<IRequestHandler<RegisterCommand<TUser, TKey>, Result<AuthResult>>, RegisterCommandHandler<TUser, TKey>>();
+           // services.AddScoped<IRequestHandler<RegisterCommand<TUser, TKey>, Result<AuthResult>>, RegisterCommandHandler<TUser, TKey,TContext>>();
             services.AddScoped<IValidator<RegisterCommand<TUser, TKey>>, RegisterCommandValidator<TUser, TKey>>();
 
             services.AddScoped<IRequestHandler<LoginCommand, Result<AuthResult>>, LoginCommandHandler<TUser, TKey>>();
@@ -131,7 +140,106 @@ namespace AuthKit.Extensions
             services.AddScoped<IRequestHandler<DeleteRoleCommand<TKey>, Result>, DeleteRoleCommandHandler<TUser, TRole, TKey>>();
 
             services.AddScoped<IRequestHandler<RemoveRoleFromUserCommand, Result>, RemoveRoleFromUserCommandHandler<TUser, TKey>>();
-            services.AddScoped<IRequestHandler<RegisterCommand<TUser, TKey>, Result<AuthResult>>, RegisterCommandHandler<TUser, TKey, TContext>>();
+            services.AddScoped<IRequestHandler<RegisterCommand<TUser, TKey>, Result<RegisterResult>>, RegisterCommandHandler<TUser, TKey, TContext>>();
+            services.AddScoped<IRequestHandler<ChangePasswordCommand, Result<AuthResult>>, ChangePasswordCommandHandler<TUser, TKey, TContext>>();
+            services.AddScoped<IValidator<ChangePasswordCommand>, ChangePasswordCommandValidator>();
+            return services;
+        }
+        public static IServiceCollection AddAuthRateLimiting(this IServiceCollection services)
+        {
+            services.AddRateLimiter(options =>
+            {
+                options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+                options.OnRejected = async (context, cancellationToken) =>
+                {
+                    if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+                    {
+                        context.HttpContext.Response.Headers.RetryAfter =
+                            ((int)retryAfter.TotalSeconds).ToString();
+                    }
+
+                    await context.HttpContext.Response.WriteAsJsonAsync(new
+                    {
+                        error = "عدد المحاولات تجاوز الحد المسموح به، حاول مرة أخرى بعد قليل."
+                    }, cancellationToken);
+                };
+
+                // سياسة صارمة: Login/Register — الأكثر حساسية (استهداف مباشر لمحاولات التخمين)
+                options.AddPolicy("auth-sensitive", httpContext =>
+                    RateLimitPartition.GetSlidingWindowLimiter(
+                        partitionKey: GetClientIp(httpContext),
+                        factory: _ => new SlidingWindowRateLimiterOptions
+                        {
+                            PermitLimit = 5,
+                            Window = TimeSpan.FromMinutes(1),
+                            SegmentsPerWindow = 4,
+                            QueueLimit = 0
+                        }));
+
+                // سياسة معتدلة: Refresh/Logout — أقل حساسية لكن تستاهل حد أعلى شوية
+                options.AddPolicy("auth-moderate", httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: GetClientIp(httpContext),
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 20,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueLimit = 0
+                        }));
+            });
+
+            return services;
+        }
+        public static IServiceCollection AddAuthKitPasswordRecovery<TUser, TKey, TContext>(this IServiceCollection services)
+    where TUser : IdentityUser<TKey>
+    where TKey : IEquatable<TKey>
+    where TContext : DbContext
+        {
+            services.AddScoped<IRequestHandler<ForgotPasswordCommand, Result>, ForgotPasswordCommandHandler<TUser, TKey>>();
+            services.AddScoped<IValidator<ForgotPasswordCommand>, ForgotPasswordCommandValidator>();
+
+            services.AddScoped<IRequestHandler<ResetPasswordCommand, Result>, ResetPasswordCommandHandler<TUser, TKey, TContext>>();
+            services.AddScoped<IValidator<ResetPasswordCommand>, ResetPasswordCommandValidator>();
+
+            return services;
+        }
+        public static IServiceCollection AddAuthKitEmailConfirmation<TUser, TKey>(
+    this IServiceCollection services, bool requireConfirmedEmail = true)
+    where TUser : IdentityUser<TKey>
+    where TKey : IEquatable<TKey>
+        {
+            services.Configure<AuthKitOptions>(options =>
+            {
+                options.SendConfirmationEmailOnRegister = true;
+                options.RequireConfirmedEmail = requireConfirmedEmail;
+            });
+
+            services.AddScoped<IRequestHandler<ConfirmEmailCommand, Result>, ConfirmEmailCommandHandler<TUser, TKey>>();
+            services.AddScoped<IValidator<ConfirmEmailCommand>, ConfirmEmailCommandValidator>();
+
+            services.AddScoped<IRequestHandler<ResendConfirmationEmailCommand, Result>, ResendConfirmationEmailCommandHandler<TUser, TKey>>();
+            services.AddScoped<IValidator<ResendConfirmationEmailCommand>, ResendConfirmationEmailCommandValidator>();
+
+            return services;
+        }
+
+        private static string GetClientIp(HttpContext httpContext) =>
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        public static IServiceCollection AddConfiguredCors(
+    this IServiceCollection services, IConfiguration configuration, string sectionName = "Cors")
+        {
+            var origins = configuration.GetSection($"{sectionName}:AllowedOrigins").Get<string[]>() ?? [];
+
+            services.AddCors(options => options.AddDefaultPolicy(policy =>
+            {
+                if (origins.Length > 0)
+                    policy.WithOrigins(origins)
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .WithExposedHeaders("Retry-After");
+            }));
+
             return services;
         }
     }

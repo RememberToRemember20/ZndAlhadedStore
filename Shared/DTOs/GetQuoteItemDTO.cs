@@ -1,5 +1,7 @@
 ﻿
 
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace Shared.DTOs
 {
     public class GetQuoteItemDTO
@@ -14,6 +16,8 @@ namespace Shared.DTOs
         public int QuoteId { get; set; }
         public GetQuoteDTO Quote { get; set; }
         public int Count { get; set; }
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal Discount { get; set; }
 
     }
 }

@@ -1,12 +1,14 @@
 ﻿using AuthKit.Features.Auth.Login.Command;
 using AuthKit.Features.Auth.Logout.Command;
 using AuthKit.Features.Auth.LogoutAll.Command;
+using AuthKit.Features.Auth.Password.Command;
 using AuthKit.Features.Auth.RefreshToken.Command;
 using AuthKit.Features.Auth.Register.Command;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using ZndAlhadedStore.Identity;
@@ -42,7 +44,7 @@ namespace ZndAlhadedStore.Controllers
             var result = await _sender.Send(new RegisterCommand<ApplicationUser, string>(user, request.Password));
             return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
         }
-
+        [EnableRateLimiting("auth-moderate")]
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginCommand command)
         {
@@ -76,6 +78,21 @@ namespace ZndAlhadedStore.Controllers
                 return Unauthorized();
 
             var result = await _sender.Send(new LogoutAllCommand(userId));
+            return result.IsSuccess ? NoContent() : BadRequest(result.Error);
+        }
+        [EnableRateLimiting("auth-sensitive")]
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordCommand command)
+        {
+            await _sender.Send(command);
+            return Ok(new { message = "إذا كان البريد مسجلاً لدينا، ستصلك رسالة بخطوات الاسترجاع." });
+        }
+
+        [EnableRateLimiting("auth-sensitive")]
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordCommand command)
+        {
+            var result = await _sender.Send(command);
             return result.IsSuccess ? NoContent() : BadRequest(result.Error);
         }
 

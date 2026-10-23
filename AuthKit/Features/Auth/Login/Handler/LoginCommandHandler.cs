@@ -1,9 +1,12 @@
 ﻿using AuthKit.Common;
 using AuthKit.Features.Auth.Login.Command;
+using AuthKit.Models;
 using AuthKit.Services.Interfaces;
+using AuthKit.Settings;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Shared.DTOs.Auth;
+using Microsoft.Extensions.Options;
+
 
 
 namespace AuthKit.Features.Auth.Login.Handler
@@ -16,17 +19,21 @@ namespace AuthKit.Features.Auth.Login.Handler
         private readonly SignInManager<TUser> _signInManager;
         private readonly IAuthTokenIssuer<TUser, TKey> _tokenIssuer;
         private readonly IUserAccessGuard<TUser>? _accessGuard;
+        private readonly AuthKitOptions _options;
 
         public LoginCommandHandler(
             UserManager<TUser> userManager,
             SignInManager<TUser> signInManager,
             IAuthTokenIssuer<TUser, TKey> tokenIssuer,
-            IUserAccessGuard<TUser>? accessGuard = null)
+            IOptions<AuthKitOptions> options,
+            IUserAccessGuard<TUser>? accessGuard = null
+                )
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _tokenIssuer = tokenIssuer;
             _accessGuard = accessGuard;
+            _options = options.Value;
         }
 
         public async Task<Result<AuthResult>> Handle(LoginCommand request, CancellationToken cancellationToken)
@@ -45,6 +52,8 @@ namespace AuthKit.Features.Auth.Login.Handler
 
             if (!signInResult.Succeeded)
                 return Result<AuthResult>.Failure("بيانات الدخول غير صحيحة.");
+            if (_options.RequireConfirmedEmail && !await _userManager.IsEmailConfirmedAsync(user))
+                return Result<AuthResult>.Failure("يرجى تأكيد بريدك الإلكتروني أولاً قبل تسجيل الدخول.");
 
             var authResult = await _tokenIssuer.IssueTokensAsync(user);
             return Result<AuthResult>.Success(authResult);

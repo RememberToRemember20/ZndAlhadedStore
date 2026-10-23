@@ -1,4 +1,5 @@
 ﻿using AuthKit.Entities;
+using AuthKit.Extensions;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using ZndAlhadedStore.Entity;
@@ -12,26 +13,7 @@ namespace ZndAlhadedStore.AppDB
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
-            builder.Entity<RolePermission<string>>(entity =>
-            {
-                entity.HasKey(rp => new { rp.RoleId, rp.PermissionId });
-
-                entity.HasOne<ApplicationRole>()
-                      .WithMany()
-                      .HasForeignKey(rp => rp.RoleId);
-
-                entity.HasOne<Permission>()
-                      .WithMany()
-                      .HasForeignKey(rp => rp.PermissionId);
-            });
-            builder.Entity<Permission>()
-            .HasIndex(p => p.Name)
-            .IsUnique();
-            builder.Entity<RefreshToken<string>>()
-     .HasOne<ApplicationUser>()
-     .WithMany(u => u.RefreshTokens)
-     .HasForeignKey(rt => rt.UserId)
-     .OnDelete(DeleteBehavior.Cascade);
+         builder.ApplyAuthKit<ApplicationUser, ApplicationRole, string>();
             builder.Entity<ManagerProfile>(entity =>
             {
                 entity.HasKey(m => m.UserId);

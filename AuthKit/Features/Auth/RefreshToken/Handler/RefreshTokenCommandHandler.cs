@@ -2,14 +2,17 @@
 using AuthKit.Entities;
 using AuthKit.Features.Auth.Logout.Handler;
 using AuthKit.Features.Auth.RefreshToken.Command;
+using AuthKit.Models;
 using AuthKit.Services.Interfaces;
+using AuthKit.Settings;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Shared.DTOs.Auth;
+
 using System.ComponentModel;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -27,16 +30,20 @@ namespace AuthKit.Features.Auth.RefreshToken.Handler
         private readonly TContext _dbContext;
         private readonly IAuthTokenIssuer<TUser, TKey> _tokenIssuer;
         private readonly ILogger<RefreshTokenCommandHandler<TUser, TKey, TContext>> _logger;
+        private readonly IUserAccessGuard<TUser>? _accessGuard;
+        private readonly AuthKitOptions _options;
 
         public RefreshTokenCommandHandler(
             ITokenService<TUser, TKey> tokenService, UserManager<TUser> userManager, TContext dbContext,
-            IAuthTokenIssuer<TUser, TKey> tokenIssuer, ILogger<RefreshTokenCommandHandler<TUser, TKey, TContext>> logger)
+            IAuthTokenIssuer<TUser, TKey> tokenIssuer, ILogger<RefreshTokenCommandHandler<TUser, TKey, TContext>> logger, IUserAccessGuard<TUser>? accessGuard, IOptions<AuthKitOptions> options)
         {
             _tokenService = tokenService;
             _userManager = userManager;
             _dbContext = dbContext;
             _tokenIssuer = tokenIssuer;
             _logger = logger;
+            _accessGuard = accessGuard;
+            _options = options.Value;
         }
 
         public async Task<Result<AuthResult>> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
@@ -76,8 +83,10 @@ namespace AuthKit.Features.Auth.RefreshToken.Handler
                 return Result<AuthResult>.Failure("انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى.");
 
             var user = await _userManager.FindByIdAsync(userIdString);
-            if (user is null)
+            if (user is null || (_accessGuard is not null && !_accessGuard.CanSignIn(user)))
                 return Result<AuthResult>.Failure("الحساب غير متاح.");
+            if (_options.RequireConfirmedEmail && !await _userManager.IsEmailConfirmedAsync(user))
+                return Result<AuthResult>.Failure("يرجى تأكيد بريدك الإلكتروني أولاً.");
 
             var authResult = await _tokenIssuer.RotateTokensAsync(user, storedToken);
             return Result<AuthResult>.Success(authResult);

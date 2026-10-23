@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Shared.DTOs.Auth
+namespace AuthKit.Models
 {
     public record AuthResult(string AccessToken, string RefreshToken, DateTime AccessTokenExpiresAt);
 }

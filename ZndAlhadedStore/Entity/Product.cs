@@ -13,7 +13,6 @@ namespace ZndAlhadedStore.Entity
         public string? EnglishDescription { get; set; }
         [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; }
-
         public Currency Currency { get; set; }
         public string? ImageURL { get; set; }
 

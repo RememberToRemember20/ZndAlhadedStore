@@ -15,6 +15,8 @@ namespace Shared.DTOs
         public int TotalQuantity { get; set; }
         public int ClientId { get; set; }
         public GetClientDTO Client { get; set; }
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal Discount { get; set; }
         public ICollection<GetQuoteItemDTO> QuoteItems { get; set; }
     }
 }

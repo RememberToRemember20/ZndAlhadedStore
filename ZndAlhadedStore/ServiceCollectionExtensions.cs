@@ -11,9 +11,13 @@ using System.Reflection;
 using System.Text;
 using ZndAlhadedStore.AppDB;
 using ZndAlhadedStore.ClaimsProvider;
+using ZndAlhadedStore.Email;
+using ZndAlhadedStore.EmailSender;
 using ZndAlhadedStore.Identity;
 using ZndAlhadedStore.Implment;
 using ZndAlhadedStore.Interfaces;
+using ZndAlhadedStore.Services;
+using ZndAlhadedStore.Settings;
 using ZndAlhadedStore.UserAccess;
 
 
@@ -49,6 +53,8 @@ namespace ZndAlhadedStore
              .AddSignInManager<SignInManager<ApplicationUser>>()
             .AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders();
+            services.Configure<DataProtectionTokenProviderOptions>(options =>
+            options.TokenLifespan = TimeSpan.FromMinutes(30));
 
             return services;
         }
@@ -57,7 +63,7 @@ namespace ZndAlhadedStore
             services.AddSingleton<ICustomClaimsProvider<ApplicationUser>, AppCustomClaimsProvider>();
             services.AddSingleton<IUserAccessGuard<ApplicationUser>, AppUserAccessGuard>();
 
-            services.AddAuthKitCore<ApplicationUser, ApplicationRole, string, AppDbContext>();   // دلوقتي بيسجل كل حاجة
+            services.AddAuthKitCore<ApplicationUser, ApplicationRole, string, AppDbContext>();   
 
             services.AddMediatR(cfg =>
             {
@@ -67,6 +73,39 @@ namespace ZndAlhadedStore
 
             services.AddExceptionHandler<GlobalExceptionHandler>();
             services.AddProblemDetails();
+            services.AddAuthKitPasswordRecovery<ApplicationUser, string, AppDbContext>();
+            services.AddAuthKitEmailConfirmation<ApplicationUser, string>();
+            return services;
+        }
+        public static IServiceCollection AddEmailSending(
+    this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
+        {
+            if (!string.IsNullOrWhiteSpace(configuration["Smtp:Host"]))
+            {
+                services.AddOptions<SmtpSettings>()
+                    .Bind(configuration.GetSection("Smtp"))
+                    .ValidateDataAnnotations()
+                    .ValidateOnStart();
+
+                services.AddOptions<FrontendSettings>()
+                    .Bind(configuration.GetSection("Frontend"))
+                    .ValidateDataAnnotations()
+                    .ValidateOnStart();
+
+                services.AddSingleton<EmailQueue>();
+                services.AddSingleton<IEmailQueue>(sp => sp.GetRequiredService<EmailQueue>());
+                services.AddHostedService<EmailBackgroundService>();
+                services.AddSingleton<IAuthEmailSender<ApplicationUser>, SmtpAuthEmailSender>();
+            }
+            else if (environment.IsDevelopment())
+            {
+                services.AddSingleton<IAuthEmailSender<ApplicationUser>, DevLoggingEmailSender>();
+            }
+            else
+            {
+                throw new InvalidOperationException(
+                    "إعدادات البريد (Smtp) غير موجودة. لا يُسمح بتشغيل بيئة غير التطوير بدون مرسل بريد حقيقي.");
+            }
 
             return services;
         }

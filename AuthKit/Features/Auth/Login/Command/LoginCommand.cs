@@ -1,6 +1,7 @@
 ﻿using AuthKit.Common;
+using AuthKit.Models;
 using MediatR;
-using Shared.DTOs.Auth;
+
 
 
 namespace AuthKit.Features.Auth.Login.Command

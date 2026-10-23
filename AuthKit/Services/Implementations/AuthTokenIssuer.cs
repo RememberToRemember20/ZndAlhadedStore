@@ -1,4 +1,5 @@
 ﻿using AuthKit.Entities;
+using AuthKit.Models;
 using AuthKit.Services.Interfaces;
 using AuthKit.Settings;
 using Microsoft.AspNetCore.Identity;
