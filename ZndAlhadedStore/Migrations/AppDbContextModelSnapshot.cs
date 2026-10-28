@@ -42,7 +42,7 @@ namespace ZndAlhadedStore.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Permissions");
+                    b.ToTable("Permissions", (string)null);
                 });
 
             modelBuilder.Entity("AuthKit.Entities.RefreshToken<string>", b =>
@@ -76,7 +76,7 @@ namespace ZndAlhadedStore.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens");
+                    b.ToTable("RefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("AuthKit.Entities.RolePermission<string>", b =>
@@ -96,7 +96,7 @@ namespace ZndAlhadedStore.Migrations
 
                     b.HasIndex("PermissionId");
 
-                    b.ToTable("RolePermissions");
+                    b.ToTable("RolePermissions", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -313,6 +313,9 @@ namespace ZndAlhadedStore.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<decimal>("Discount")
+                        .HasColumnType("decimal(5,2)");
+
                     b.Property<decimal>("ExchangeRate")
                         .HasColumnType("decimal(18,4)");
 
@@ -341,6 +344,12 @@ namespace ZndAlhadedStore.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("Count")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Discount")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<int>("ProductCurrency")
                         .HasColumnType("int");
 
                     b.Property<int>("ProductId")
@@ -476,7 +485,7 @@ namespace ZndAlhadedStore.Migrations
             modelBuilder.Entity("AuthKit.Entities.RefreshToken<string>", b =>
                 {
                     b.HasOne("ZndAlhadedStore.Identity.ApplicationUser", null)
-                        .WithMany("RefreshTokens")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
@@ -630,8 +639,6 @@ namespace ZndAlhadedStore.Migrations
                     b.Navigation("EmployeeProfile");
 
                     b.Navigation("ManagerProfile");
-
-                    b.Navigation("RefreshTokens");
                 });
 #pragma warning restore 612, 618
         }
