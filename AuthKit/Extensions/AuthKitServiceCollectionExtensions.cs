@@ -3,10 +3,13 @@
 using AuthKit.Authorization.PermissionFoldar.Command;
 using AuthKit.Authorization.PermissionFoldar.Handler;
 using AuthKit.Common;
+using AuthKit.Common.Behaviors;
 using AuthKit.Features.AccessControl.AssignPermissionToRole.Command;
 using AuthKit.Features.AccessControl.AssignPermissionToRole.Handler;
 using AuthKit.Features.AccessControl.AssignRole.Command;
 using AuthKit.Features.AccessControl.AssignRole.Handler;
+using AuthKit.Features.AccessControl.Audit.Handler;
+using AuthKit.Features.AccessControl.Audit.Query;
 using AuthKit.Features.AccessControl.GetPermissions.Handler;
 using AuthKit.Features.AccessControl.GetPermissions.Query;
 using AuthKit.Features.AccessControl.GetRolePermissions.Handler;
@@ -48,7 +51,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
-
 using System.Text;
 using System.Threading.RateLimiting;
 
@@ -120,8 +122,8 @@ namespace AuthKit.Extensions
             services.AddScoped<IRequestHandler<LogoutAllCommand, Result>, LogoutAllCommandHandler<TUser, TKey>>();
             services.AddScoped<IRequestHandler<AssignRoleCommand, Result>, AssignRoleCommandHandler<TUser, TRole, TKey>>();
 
-            services.AddScoped<IRequestHandler<GetRolesQuery, Result<List<AuthKit.Features.AccessControl.GetRoles.Query.RoleDto>>>, GetRolesQueryHandler<TRole, TKey>>();
-
+            services.AddScoped<IRequestHandler<GetRolesQuery, Result<PagedResult<RoleDto>>>, GetRolesQueryHandler<TRole, TKey>>();
+            services.AddScoped<IValidator<GetRolesQuery>, GetRolesQueryValidator>();
             services.AddScoped<IRequestHandler<GetPermissionsQuery, Result<List<AuthKit.Features.AccessControl.GetPermissions.Query.PermissionDto>>>, GetPermissionsQueryHandler<TContext>>();
 
             services.AddScoped<IRequestHandler<GetRolePermissionsQuery, Result<List<AuthKit.Features.AccessControl.GetPermissions.Query.PermissionDto>>>, GetRolePermissionsQueryHandler<TRole, TKey, TContext>>();
@@ -143,6 +145,12 @@ namespace AuthKit.Extensions
             services.AddScoped<IRequestHandler<RegisterCommand<TUser, TKey>, Result<RegisterResult>>, RegisterCommandHandler<TUser, TKey, TContext>>();
             services.AddScoped<IRequestHandler<ChangePasswordCommand, Result<AuthResult>>, ChangePasswordCommandHandler<TUser, TKey, TContext>>();
             services.AddScoped<IValidator<ChangePasswordCommand>, ChangePasswordCommandValidator>();
+            services.AddSingleton<RefreshTokenCleanupService<TKey, TContext>>();
+            services.AddHostedService(sp => sp.GetRequiredService<RefreshTokenCleanupService<TKey, TContext>>());
+            services.AddHttpContextAccessor();
+            services.AddScoped<IAuditContext, HttpAuditContext>();
+            services.AddScoped<IRequestHandler<GetAuditLogsQuery, Result<PagedResult<AuditLogDto>>>, GetAuditLogsQueryHandler<TContext>>();
+            services.AddScoped<IValidator<GetAuditLogsQuery>, GetAuditLogsQueryValidator>();
             return services;
         }
         public static IServiceCollection AddAuthRateLimiting(this IServiceCollection services)
@@ -242,5 +250,19 @@ namespace AuthKit.Extensions
 
             return services;
         }
+        public static MediatRServiceConfiguration AddAuthKitBehaviors(this MediatRServiceConfiguration cfg)
+        {
+            cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
+            cfg.AddOpenBehavior(typeof(AuditBehavior<,>));
+            return cfg;
+        }
+        public static IServiceCollection AddAuthKitAuditing<TContext>(this IServiceCollection services)
+    where TContext : DbContext
+        {
+            services.AddHttpContextAccessor();
+            services.AddSingleton<IAuditLogger, EfAuditLogger<TContext>>();
+            return services;
+        }
+
     }
 }

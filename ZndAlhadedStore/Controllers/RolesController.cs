@@ -22,11 +22,12 @@ namespace ZndAlhadedStore.Controllers
         private readonly ISender _sender;
         public RolesController(ISender sender) => _sender = sender;
 
-        [RequirePermission(Permissions.Roles.Manage)]
+        // RolesController
+        //[RequirePermission(Permissions.Roles.Manage)]
         [HttpGet]
-        public async Task<IActionResult> GetRoles()
+        public async Task<IActionResult> GetRoles([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var result = await _sender.Send(new GetRolesQuery());
+            var result = await _sender.Send(new GetRolesQuery(page, pageSize));
             return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
         }
 

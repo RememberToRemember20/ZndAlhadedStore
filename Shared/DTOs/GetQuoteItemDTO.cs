@@ -12,9 +12,7 @@ namespace Shared.DTOs
         public decimal ProductPriceSYP { get; set; }
         public decimal ProductPriceUSD { get; set; }
         public int ProductId { get; set; }
-        public GetProductDTO Product { get; set; }
         public int QuoteId { get; set; }
-        public GetQuoteDTO Quote { get; set; }
         public int Count { get; set; }
         [Column(TypeName = "decimal(5,2)")]
         public decimal Discount { get; set; }

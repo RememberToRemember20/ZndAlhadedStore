@@ -38,11 +38,12 @@ namespace ZndAlhadedStore.Controllers
         [HttpPost("CreateClient")]
         public async Task<IActionResult> CreateClient([FromBody] CreateClientDTO clientDto)
         {
-            var client = await _mediator.Send(clientDto);
+            var clientCommand = _mapper.Map<CreateClientCommand>(clientDto);
+            var client = await _mediator.Send(clientCommand);
             return Ok(client);
         }
         [HttpPut("{id}/UpdateClient")]
-        public async Task<IActionResult> UpdateClient(int id, [FromBody] UpdateClientCommand clientDto)
+        public async Task<IActionResult> UpdateClient(int id, [FromBody] CreateClientDTO clientDto)
         {
             var Command=_mapper.Map<UpdateClientCommand>(clientDto);
             Command.Id = id;

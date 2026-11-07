@@ -8,6 +8,11 @@
             public const string ViewAll = "Users.ViewAll";
             public const string ManageRoles = "Users.ManageRoles";
             public const string SetActive = "Users.SetActive";
+
+        }
+        public static class AuditLogs
+        {
+            public const string View = "AuditLogs.View";
         }
         public static class Roles
         {

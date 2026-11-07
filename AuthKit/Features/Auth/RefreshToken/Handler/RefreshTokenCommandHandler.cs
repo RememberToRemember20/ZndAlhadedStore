@@ -32,15 +32,17 @@ namespace AuthKit.Features.Auth.RefreshToken.Handler
         private readonly ILogger<RefreshTokenCommandHandler<TUser, TKey, TContext>> _logger;
         private readonly IUserAccessGuard<TUser>? _accessGuard;
         private readonly AuthKitOptions _options;
+        private readonly IAuditContext _audit;
 
         public RefreshTokenCommandHandler(
             ITokenService<TUser, TKey> tokenService, UserManager<TUser> userManager, TContext dbContext,
-            IAuthTokenIssuer<TUser, TKey> tokenIssuer, ILogger<RefreshTokenCommandHandler<TUser, TKey, TContext>> logger, IUserAccessGuard<TUser>? accessGuard, IOptions<AuthKitOptions> options)
+            IAuthTokenIssuer<TUser, TKey> tokenIssuer, ILogger<RefreshTokenCommandHandler<TUser, TKey, TContext>> logger, IAuditContext audit, IUserAccessGuard<TUser>? accessGuard, IOptions<AuthKitOptions> options)
         {
             _tokenService = tokenService;
             _userManager = userManager;
             _dbContext = dbContext;
             _tokenIssuer = tokenIssuer;
+            _audit = audit;
             _logger = logger;
             _accessGuard = accessGuard;
             _options = options.Value;
@@ -76,7 +78,8 @@ namespace AuthKit.Features.Auth.RefreshToken.Handler
             {
                 await _tokenIssuer.RevokeAllActiveTokensAsync(userId, cancellationToken);
                 _logger.LogWarning("اكتشاف إعادة استخدام Refresh Token ملغى للمستخدم {UserId}.", userId);
-                return Result<AuthResult>.Failure("تم اكتشاف نشاط مشبوه، تم إنهاء جميع الجلسات. يرجى تسجيل الدخول مرة أخرى.");
+                return Result<AuthResult>.Failure("تم اكتشاف نشاط مشبوه، تم إنهاء جميع الجلسات. يرجى تسجيل الدخول مرة أخرى.",
+     AuthErrorCodes.TokenReuseDetected);
             }
 
             if (!storedToken.IsActive)
@@ -87,7 +90,7 @@ namespace AuthKit.Features.Auth.RefreshToken.Handler
                 return Result<AuthResult>.Failure("الحساب غير متاح.");
             if (_options.RequireConfirmedEmail && !await _userManager.IsEmailConfirmedAsync(user))
                 return Result<AuthResult>.Failure("يرجى تأكيد بريدك الإلكتروني أولاً.");
-
+            _audit.SetActor(userIdString);
             var authResult = await _tokenIssuer.RotateTokensAsync(user, storedToken);
             return Result<AuthResult>.Success(authResult);
         }

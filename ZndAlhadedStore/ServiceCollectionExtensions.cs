@@ -63,14 +63,15 @@ namespace ZndAlhadedStore
             services.AddSingleton<ICustomClaimsProvider<ApplicationUser>, AppCustomClaimsProvider>();
             services.AddSingleton<IUserAccessGuard<ApplicationUser>, AppUserAccessGuard>();
 
-            services.AddAuthKitCore<ApplicationUser, ApplicationRole, string, AppDbContext>();   
+            services.AddAuthKitCore<ApplicationUser, ApplicationRole, string, AppDbContext>();
+
+            services.AddAuthKitAuditing<AppDbContext>();
 
             services.AddMediatR(cfg =>
             {
                 cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
-                cfg.AddOpenBehavior(typeof(AuthKit.Common.Behaviors.ValidationBehavior<,>));
+                cfg.AddAuthKitBehaviors();     // بدل cfg.AddOpenBehavior(typeof(ValidationBehavior<,>))
             });
-
             services.AddExceptionHandler<GlobalExceptionHandler>();
             services.AddProblemDetails();
             services.AddAuthKitPasswordRecovery<ApplicationUser, string, AppDbContext>();

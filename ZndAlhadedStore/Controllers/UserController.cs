@@ -38,11 +38,12 @@ namespace ZndAlhadedStore.Controllers
             var result = await _sender.Send(new RemoveRoleFromUserCommand(userId, roleName));
             return result.IsSuccess ? NoContent() : BadRequest(result.Error);
         }
-       // [RequirePermission(Permissions.Users.ViewAll)]
+        //[RequirePermission(Permissions.Users.ViewAll)]
         [HttpGet]
-        public async Task<IActionResult> GetUsers()
+        public async Task<IActionResult> GetUsers(
+      [FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] string? search = null)
         {
-            var result = await _sender.Send(new GetUsersQuery());
+            var result = await _sender.Send(new GetUsersQuery(page, pageSize, search));
             return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
         }
         [EnableRateLimiting("auth-sensitive")]

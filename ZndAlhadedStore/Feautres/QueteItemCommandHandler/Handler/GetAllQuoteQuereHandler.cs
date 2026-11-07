@@ -18,7 +18,7 @@ namespace ZndAlhadedStore.Feautres.QueteItemCommandHandler.Handler
         }
         public async Task<IEnumerable<GetQuoteDTO>> Handle(GetAllQuoteQuery request, CancellationToken cancellationToken)
         {
-            var quotes = await _context.Quotes.ToListAsync(cancellationToken);
+            var quotes = await _context.Quotes.Include(q=>q.QuoteItems).ToListAsync(cancellationToken);
             return _mapper.Map<IEnumerable<GetQuoteDTO>>(quotes);
         }
     }
