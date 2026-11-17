@@ -40,12 +40,19 @@ namespace ZndAlhadedStore.Email
         {
             if (!_queue.TryEnqueue(new EmailMessage(user.Email!, subject, html, text)))
                 _logger.LogError("طابور الإرسال ممتلئ، تم إسقاط رسالة.");
-        }
+        }   
 
         private string BuildLink(string path, params (string Key, string Value)[] query)
         {
             var queryString = string.Join("&", query.Select(q => $"{q.Key}={Uri.EscapeDataString(q.Value)}"));
             return $"{_frontend.BaseUrl.TrimEnd('/')}{path}?{queryString}";
+        }
+        public Task SendInvitationAsync(ApplicationUser user, string encodedToken, CancellationToken cancellationToken = default)
+        {
+            var link = BuildLink(_frontend.ResetPasswordPath, ("email", user.Email!), ("token", encodedToken));
+            var (subject, html, text) = AuthEmailTemplates.Invitation(user.FullName, link);
+            Enqueue(user, subject, html, text);
+            return Task.CompletedTask;
         }
     }
 }

@@ -18,11 +18,13 @@ namespace AuthKit.Services.Implementations
     {
         private readonly JwtSettings _jwtSettings;
         private readonly ICustomClaimsProvider<TUser>? _customClaimsProvider;
+        private readonly TimeProvider _time;
 
-        public TokenService(IOptions<JwtSettings> jwtSettings, ICustomClaimsProvider<TUser>? customClaimsProvider = null)
+        public TokenService(IOptions<JwtSettings> jwtSettings, TimeProvider time, ICustomClaimsProvider<TUser>? customClaimsProvider = null)
         {
             _jwtSettings = jwtSettings.Value;
             _customClaimsProvider = customClaimsProvider;
+            _time = time;
         }
 
         public string GenerateAccessToken(TUser user, IEnumerable<string> roles, IEnumerable<string> permissions)
@@ -47,7 +49,7 @@ namespace AuthKit.Services.Implementations
                 issuer: _jwtSettings.Issuer,
                 audience: _jwtSettings.Audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
+                expires: _time.GetUtcNow().UtcDateTime.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
                 signingCredentials: credentials
             );
 

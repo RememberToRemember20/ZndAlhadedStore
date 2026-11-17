@@ -10,6 +10,8 @@ namespace AuthKit.Services.Interfaces
         Task SendEmailConfirmationAsync(TUser user, string encodedToken, CancellationToken cancellationToken = default);
         Task SendInvitationAsync(TUser user, string encodedToken, CancellationToken cancellationToken = default) =>
       SendPasswordResetAsync(user, encodedToken, cancellationToken);
+       Task SendInvitationAsync(TUser user, string encodedToken, CancellationToken cancellationToken = default)
+
 
     }
 }

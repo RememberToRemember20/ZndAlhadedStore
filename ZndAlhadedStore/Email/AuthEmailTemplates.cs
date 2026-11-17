@@ -37,5 +37,10 @@ namespace ZndAlhadedStore.Email
             var text = $"مرحباً {fullName}،\n\n{body}\n\n{link}\n\n{footer}";
             return (title, html, text);
         }
+        public static (string Subject, string Html, string Text) Invitation(string fullName, string link) =>
+    Build("دعوة للانضمام إلى فريق العمل", fullName,
+          "تمت إضافتك إلى فريق العمل. اضغط على الزر أدناه لتحديد كلمة مرورك والبدء. الرابط صالح لمدة 30 دقيقة، وبعدها يمكنك استخدام «نسيت كلمة المرور».",
+          "تحديد كلمة المرور", link,
+          "إذا لم تكن تتوقع هذه الدعوة، تجاهل هذه الرسالة.");
     }
 }

@@ -19,6 +19,9 @@ namespace ZndAlhadedStore.Identity.Seeding
             await SeedAdminRoleAsync(roleManager, dbContext);
             await roleManager.CreateAsync(new ApplicationRole { Name = "User", Description = "مستخدم عادي" });
             await SeedAdminUserAsync(userManager, configuration);
+            await SeedRoleIfMissingAsync(roleManager, dbContext, "Manager", "مدير", [Permissions.Users.Invite, Permissions.Staff.View]);
+            await SeedRoleIfMissingAsync(roleManager, dbContext, "Supervisor", "مشرف", [Permissions.Staff.View]);
+            await SeedRoleIfMissingAsync(roleManager, dbContext, "Employee", "موظف", []);
         }
 
         private static async Task SeedPermissionsAsync(AppDbContext dbContext)
@@ -82,6 +85,22 @@ namespace ZndAlhadedStore.Identity.Seeding
             var result = await userManager.CreateAsync(admin, password);
             if (result.Succeeded)
                 await userManager.AddToRoleAsync(admin, "Admin");
+        }
+        private static async Task SeedRoleIfMissingAsync(
+    RoleManager<ApplicationRole> roleManager, AppDbContext db,
+    string name, string description, IReadOnlyCollection<string> permissionNames)
+        {
+            if (await roleManager.RoleExistsAsync(name)) return;
+
+            var role = new ApplicationRole { Name = name, Description = description };
+            if (!(await roleManager.CreateAsync(role)).Succeeded) return;
+
+            var ids = await db.Permissions
+                .Where(p => permissionNames.Contains(p.Name)).Select(p => p.Id).ToListAsync();
+
+            db.Set<RolePermission<string>>().AddRange(
+                ids.Select(id => new RolePermission<string> { RoleId = role.Id, PermissionId = id }));
+            await db.SaveChangesAsync();
         }
     }
 }

@@ -18,15 +18,17 @@ namespace AuthKit.Services.Implementations
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly AuthKitOptions _options;
         private readonly ILogger<RefreshTokenCleanupService<TKey, TContext>> _logger;
-
+        private readonly TimeProvider _time;
         public RefreshTokenCleanupService(
             IServiceScopeFactory scopeFactory,
             IOptions<AuthKitOptions> options,
-            ILogger<RefreshTokenCleanupService<TKey, TContext>> logger)
+            ILogger<RefreshTokenCleanupService<TKey, TContext>> logger,
+            TimeProvider time)
         {
             _scopeFactory = scopeFactory;
             _options = options.Value;
             _logger = logger;
+            _time = time;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -60,7 +62,7 @@ namespace AuthKit.Services.Implementations
             using var scope = _scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<TContext>();
 
-            var cutoff = DateTime.UtcNow.AddDays(-_options.ExpiredTokenRetentionDays);
+            var cutoff = _time.GetUtcNow().AddDays(-_options.ExpiredTokenRetentionDays);
 
             return await db.Set<RefreshToken<TKey>>()
                 .Where(rt => rt.ExpiresAt < cutoff)

@@ -76,6 +76,8 @@ namespace ZndAlhadedStore
             services.AddProblemDetails();
             services.AddAuthKitPasswordRecovery<ApplicationUser, string, AppDbContext>();
             services.AddAuthKitEmailConfirmation<ApplicationUser, string>();
+            services.AddAuthKitUserInvitation<ApplicationUser, ApplicationRole, string, AppDbContext>();
+            services.AddScoped<IUserProvisioningValidator<ApplicationUser>, StaffProvisioningRules>();
             return services;
         }
         public static IServiceCollection AddEmailSending(

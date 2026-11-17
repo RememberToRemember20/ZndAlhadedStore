@@ -16,11 +16,12 @@ namespace AuthKit.Features.Auth.Logout.Handler
     {
         private readonly TContext _dbContext;
         private readonly ITokenService<TUser, TKey> _tokenService;
-
-        public LogoutCommandHandler(TContext dbContext, ITokenService<TUser, TKey> tokenService)
+        private readonly TimeProvider _time;
+        public LogoutCommandHandler(TContext dbContext, ITokenService<TUser, TKey> tokenService, TimeProvider time)
         {
             _dbContext = dbContext;
             _tokenService = tokenService;
+            _time = time;
         }
 
         public async Task<Result> Handle(LogoutCommand request, CancellationToken cancellationToken)
@@ -33,7 +34,7 @@ namespace AuthKit.Features.Auth.Logout.Handler
 
             if (storedToken is not null && storedToken.RevokedAt is null)
             {
-                storedToken.RevokedAt = DateTime.UtcNow;
+                storedToken.RevokedAt = _time.GetUtcNow().UtcDateTime;
                 await _dbContext.SaveChangesAsync(cancellationToken);
             }
 

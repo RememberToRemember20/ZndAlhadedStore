@@ -22,16 +22,17 @@ namespace AuthKit.Services.Implementations
         private readonly UserManager<TUser> _userManager;
         private readonly TContext _dbContext;
         private readonly JwtSettings _jwtSettings;
-
+        private readonly TimeProvider _time;
         public AuthTokenIssuer(
             ITokenService<TUser, TKey> tokenService,
             UserManager<TUser> userManager,
-            TContext dbContext,
+            TContext dbContext, TimeProvider time,
             IOptions<JwtSettings> jwtSettings)
         {
             _tokenService = tokenService;
             _userManager = userManager;
             _dbContext = dbContext;
+            _time = time;
             _jwtSettings = jwtSettings.Value;
         }
 
@@ -57,7 +58,7 @@ namespace AuthKit.Services.Implementations
 
             if (replacingToken is not null)
             {
-                replacingToken.RevokedAt = DateTime.UtcNow;
+                replacingToken.RevokedAt = _time.GetUtcNow().UtcDateTime;
                 replacingToken.ReplacedByTokenHash = refreshTokenHash;
             }
 
@@ -65,12 +66,12 @@ namespace AuthKit.Services.Implementations
             {
                 UserId = user.Id,
                 TokenHash = refreshTokenHash,
-                ExpiresAt = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays)
+                ExpiresAt = _time.GetUtcNow().UtcDateTime.AddDays(_jwtSettings.RefreshTokenExpirationDays)
             });
 
             await _dbContext.SaveChangesAsync();
 
-            return new AuthResult(accessToken, refreshToken, DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes));
+            return new AuthResult(accessToken, refreshToken, _time.GetUtcNow().UtcDateTime.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes));
         }
 
         public async Task RevokeAllActiveTokensAsync(TKey userId, CancellationToken cancellationToken = default)
@@ -80,7 +81,7 @@ namespace AuthKit.Services.Implementations
                 .ToListAsync(cancellationToken);
 
             foreach (var token in activeTokens)
-                token.RevokedAt = DateTime.UtcNow;
+                token.RevokedAt = _time.GetUtcNow().UtcDateTime;
 
             await _dbContext.SaveChangesAsync(cancellationToken);
         }

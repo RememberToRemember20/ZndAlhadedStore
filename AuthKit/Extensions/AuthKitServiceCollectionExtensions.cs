@@ -52,6 +52,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Threading.RateLimiting;
@@ -153,6 +154,7 @@ namespace AuthKit.Extensions
             services.AddScoped<IAuditContext, HttpAuditContext>();
             services.AddScoped<IRequestHandler<GetAuditLogsQuery, Result<PagedResult<AuditLogDto>>>, GetAuditLogsQueryHandler<TContext>>();
             services.AddScoped<IValidator<GetAuditLogsQuery>, GetAuditLogsQueryValidator>();
+            services.TryAddSingleton(TimeProvider.System);
             return services;
         }
         public static IServiceCollection AddAuthRateLimiting(this IServiceCollection services)

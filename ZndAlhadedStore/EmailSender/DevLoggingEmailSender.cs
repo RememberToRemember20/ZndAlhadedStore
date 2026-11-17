@@ -1,4 +1,5 @@
 ﻿using AuthKit.Services.Interfaces;
+using ZndAlhadedStore.Email;
 using ZndAlhadedStore.Identity;
 
 namespace ZndAlhadedStore.EmailSender
@@ -18,6 +19,12 @@ namespace ZndAlhadedStore.EmailSender
         {
             _logger.LogInformation("[DEV] Email confirmation for {Email} | UserId: {UserId} | Token: {Token}",
                 user.Email, user.Id, encodedToken);
+            return Task.CompletedTask;
+        }
+        public Task SendInvitationAsync(ApplicationUser user, string encodedToken, CancellationToken cancellationToken = default)
+        {
+            _logger.LogInformation("[DEV] Invitation for {Email} | UserId: {UserId} | Token: {Token}",
+               user.Email, user.Id, encodedToken);
             return Task.CompletedTask;
         }
     }

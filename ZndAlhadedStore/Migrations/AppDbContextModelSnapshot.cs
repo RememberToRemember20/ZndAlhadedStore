@@ -17,7 +17,7 @@ namespace ZndAlhadedStore.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.12")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -289,47 +289,6 @@ namespace ZndAlhadedStore.Migrations
                     b.ToTable("Clients");
                 });
 
-            modelBuilder.Entity("ZndAlhadedStore.Entity.EmployeeProfile", b =>
-                {
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("HireDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ManagerId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<decimal>("Salary")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("UserId");
-
-                    b.HasIndex("ManagerId");
-
-                    b.ToTable("EmployeeProfiles");
-                });
-
-            modelBuilder.Entity("ZndAlhadedStore.Entity.ManagerProfile", b =>
-                {
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<decimal>("Budget")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("Department")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("TeamSize")
-                        .HasColumnType("int");
-
-                    b.HasKey("UserId");
-
-                    b.ToTable("ManagerProfiles");
-                });
-
             modelBuilder.Entity("ZndAlhadedStore.Entity.Product", b =>
                 {
                     b.Property<int>("Id")
@@ -438,6 +397,32 @@ namespace ZndAlhadedStore.Migrations
                     b.HasIndex("QuoteId");
 
                     b.ToTable("QuoteItems");
+                });
+
+            modelBuilder.Entity("ZndAlhadedStore.Entity.StaffProfile", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Department")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateOnly>("HireDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("JobTitle")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ReportsToId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("UserId");
+
+                    b.HasIndex("ReportsToId");
+
+                    b.ToTable("StaffProfiles");
                 });
 
             modelBuilder.Entity("ZndAlhadedStore.Identity.ApplicationRole", b =>
@@ -623,35 +608,6 @@ namespace ZndAlhadedStore.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("ZndAlhadedStore.Entity.EmployeeProfile", b =>
-                {
-                    b.HasOne("ZndAlhadedStore.Identity.ApplicationUser", "Manager")
-                        .WithMany()
-                        .HasForeignKey("ManagerId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("ZndAlhadedStore.Identity.ApplicationUser", "User")
-                        .WithOne("EmployeeProfile")
-                        .HasForeignKey("ZndAlhadedStore.Entity.EmployeeProfile", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Manager");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("ZndAlhadedStore.Entity.ManagerProfile", b =>
-                {
-                    b.HasOne("ZndAlhadedStore.Identity.ApplicationUser", "User")
-                        .WithOne("ManagerProfile")
-                        .HasForeignKey("ZndAlhadedStore.Entity.ManagerProfile", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("ZndAlhadedStore.Entity.Quote", b =>
                 {
                     b.HasOne("ZndAlhadedStore.Entity.Client", "Client")
@@ -682,6 +638,22 @@ namespace ZndAlhadedStore.Migrations
                     b.Navigation("Quote");
                 });
 
+            modelBuilder.Entity("ZndAlhadedStore.Entity.StaffProfile", b =>
+                {
+                    b.HasOne("ZndAlhadedStore.Entity.StaffProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ReportsToId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ZndAlhadedStore.Identity.ApplicationUser", "User")
+                        .WithOne("StaffProfile")
+                        .HasForeignKey("ZndAlhadedStore.Entity.StaffProfile", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ZndAlhadedStore.Entity.Client", b =>
                 {
                     b.Navigation("Quotes");
@@ -699,9 +671,7 @@ namespace ZndAlhadedStore.Migrations
 
             modelBuilder.Entity("ZndAlhadedStore.Identity.ApplicationUser", b =>
                 {
-                    b.Navigation("EmployeeProfile");
-
-                    b.Navigation("ManagerProfile");
+                    b.Navigation("StaffProfile");
                 });
 #pragma warning restore 612, 618
         }

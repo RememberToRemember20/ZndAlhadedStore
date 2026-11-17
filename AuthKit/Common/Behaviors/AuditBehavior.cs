@@ -14,15 +14,16 @@ namespace AuthKit.Common.Behaviors
         private readonly IAuditContext _context;
         private readonly ILogger<AuditBehavior<TRequest, TResponse>> _logger;
         private readonly IAuditLogger? _auditLogger;
-
+        private readonly TimeProvider _time;
         public AuditBehavior(
-            IAuditContext context,
+            IAuditContext context, TimeProvider time,
             ILogger<AuditBehavior<TRequest, TResponse>> logger,
             IAuditLogger? auditLogger = null)
         {
             _context = context;
             _logger = logger;
             _auditLogger = auditLogger;
+            _time = time;
         }
 
         public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
@@ -57,7 +58,7 @@ namespace AuthKit.Common.Behaviors
 
                 await _auditLogger!.LogAsync(new AuditLog
                 {
-                    OccurredAtUtc = DateTime.UtcNow,
+                    OccurredAtUtc = _time.GetUtcNow().UtcDateTime,
                     EventType = descriptor.EventType,
                     Succeeded = succeeded,
                     FailureCode = failureCode,

@@ -8,8 +8,15 @@
             public const string ViewAll = "Users.ViewAll";
             public const string ManageRoles = "Users.ManageRoles";
             public const string SetActive = "Users.SetActive";
+            public const string Invite = "Users.Invite";
 
         }
+        public static class Staff
+        {
+            public const string View = "Staff.View";            // يرى فريقه فقط
+            public const string AllTeams = "Staff.AllTeams";    // يرى ويضيف في كل الفرق
+        }
+
         public static class AuditLogs
         {
             public const string View = "AuditLogs.View";
