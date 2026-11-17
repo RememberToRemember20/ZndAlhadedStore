@@ -14,26 +14,20 @@ namespace ZndAlhadedStore.AppDB
         {
             base.OnModelCreating(builder);
          builder.ApplyAuthKit<ApplicationUser, ApplicationRole, string>();
-            builder.Entity<ManagerProfile>(entity =>
+            builder.Entity<StaffProfile>(entity =>
             {
-                entity.HasKey(m => m.UserId);
-                entity.HasOne(m => m.User)
-                      .WithOne(u => u.ManagerProfile)
-                      .HasForeignKey<ManagerProfile>(m => m.UserId)
-                      .OnDelete(DeleteBehavior.Cascade);
-            });
-            builder.Entity<EmployeeProfile>(entity =>
-            {
-                entity.HasKey(e => e.UserId);
+                entity.HasKey(s => s.UserId);
+                entity.Property(s => s.JobTitle).HasMaxLength(100);
+                entity.Property(s => s.Department).HasMaxLength(100);
 
-                entity.HasOne(e => e.User)
-                      .WithOne(u => u.EmployeeProfile)
-                      .HasForeignKey<EmployeeProfile>(e => e.UserId)
+                entity.HasOne(s => s.User)
+                      .WithOne(u => u.StaffProfile)
+                      .HasForeignKey<StaffProfile>(s => s.UserId)
                       .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasOne(e => e.Manager)
+                entity.HasOne<StaffProfile>()
                       .WithMany()
-                      .HasForeignKey(e => e.ManagerId)
+                      .HasForeignKey(s => s.ReportsToId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
         }
@@ -44,7 +38,6 @@ namespace ZndAlhadedStore.AppDB
         public DbSet<Permission> Permissions => Set<Permission>();
         public DbSet<RolePermission<string>> RolePermissions => Set<RolePermission<string>>();
         public DbSet<RefreshToken<string>> RefreshTokens => Set<RefreshToken<string>>();
-        public DbSet<ManagerProfile> ManagerProfiles { get; set; }
-        public DbSet<EmployeeProfile> EmployeeProfiles { get; set; }
+        public DbSet<StaffProfile> StaffProfiles => Set<StaffProfile>();
     }
 }

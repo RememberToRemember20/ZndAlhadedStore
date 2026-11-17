@@ -58,7 +58,7 @@ namespace AuthKit.Features.Auth.Login.Handler
                 return Result<AuthResult>.Failure("بيانات الدخول غير صحيحة.", AuthErrorCodes.InvalidCredentials);   // الثلاثة أماكن (مستخدم غير موجود / Guard / كلمة سر غلط)
             if (_options.RequireConfirmedEmail && !await _userManager.IsEmailConfirmedAsync(user))
                 return Result<AuthResult>.Failure("يرجى تأكيد بريدك الإلكتروني أولاً قبل تسجيل الدخول.");
-            _audit.SetActor(user.Id.ToString());
+            _audit.SetActor(user.Id.ToString()!);
             var authResult = await _tokenIssuer.IssueTokensAsync(user);
             return Result<AuthResult>.Success(authResult);
         }

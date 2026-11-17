@@ -24,7 +24,7 @@ namespace ZndAlhadedStore.Controllers
         private readonly ISender _sender;
         public UserController(ISender sender) => _sender = sender;
 
-     //   [RequirePermission(Permissions.Users.ManageRoles)]
+        [RequirePermission(Permissions.Users.ManageRoles)]
         [HttpPost("{userId}/roles")]
         public async Task<IActionResult> AssignRole(string userId, AssignRoleRequest request)
         {
@@ -38,8 +38,8 @@ namespace ZndAlhadedStore.Controllers
             var result = await _sender.Send(new RemoveRoleFromUserCommand(userId, roleName));
             return result.IsSuccess ? NoContent() : BadRequest(result.Error);
         }
-        //[RequirePermission(Permissions.Users.ViewAll)]
-        [HttpGet]
+        [RequirePermission(Permissions.Users.ViewAll)]
+        [HttpGet("GetUser")]
         public async Task<IActionResult> GetUsers(
       [FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] string? search = null)
         {

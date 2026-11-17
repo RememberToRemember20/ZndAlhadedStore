@@ -9,7 +9,6 @@ namespace ZndAlhadedStore.Entity
 
         public DateTime HireDate { get; set; }
         public decimal Salary { get; set; }
-
         public string? ManagerId { get; set; }
         public ApplicationUser? Manager { get; set; }
     }

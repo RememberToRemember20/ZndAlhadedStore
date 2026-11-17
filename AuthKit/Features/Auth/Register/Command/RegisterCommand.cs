@@ -3,7 +3,7 @@ using AuthKit.Models;
 using AuthKit.Services.Interfaces;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Shared.DTOs.Auth;
+
 
 
 namespace AuthKit.Features.Auth.Register.Command

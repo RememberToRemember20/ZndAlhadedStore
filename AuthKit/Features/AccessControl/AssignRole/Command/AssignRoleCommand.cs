@@ -1,7 +1,6 @@
 ﻿using AuthKit.Common;
 using AuthKit.Services.Interfaces;
 using MediatR;
-using MediatR;
 
 namespace AuthKit.Features.AccessControl.AssignRole.Command
 {

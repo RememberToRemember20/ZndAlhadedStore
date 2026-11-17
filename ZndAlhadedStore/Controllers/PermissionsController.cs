@@ -15,7 +15,7 @@ namespace ZndAlhadedStore.Controllers
         public PermissionsController(ISender sender) => _sender = sender;
 
         [RequirePermission(Permissions.Roles.Manage)]
-        [HttpGet]
+        [HttpGet("GetPermissions")]
         public async Task<IActionResult> GetAll()
         {
             var result = await _sender.Send(new GetPermissionsQuery());

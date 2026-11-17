@@ -15,7 +15,7 @@ namespace ZndAlhadedStore.Controllers
         public AuditLogsController(ISender sender) => _sender = sender;
 
         [RequirePermission(Permissions.AuditLogs.View)]
-        [HttpGet]
+        [HttpGet("GetAllAudits")]
         public async Task<IActionResult> Get([FromQuery] GetAuditLogsQuery query)
         {
             var result = await _sender.Send(query);

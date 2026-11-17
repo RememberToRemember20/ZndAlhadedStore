@@ -22,5 +22,6 @@ namespace AuthKit.Common
         public const string RolePermissionRevoke = "role.permission_revoke";
         public const string UserRoleAssign = "user.role_assign";
         public const string UserRoleRemove = "user.role_remove";
+        public const string UserInvite = "user.invite";
     }
 }

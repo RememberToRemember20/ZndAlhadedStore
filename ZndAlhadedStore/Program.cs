@@ -36,6 +36,7 @@ builder.Services.AddProblemDetails();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
 //builder.Services.AddScoped<IAuthTokenIssuer, AuthTokenIssuer>();
 builder.Services.AddJwtAuthentication(builder.Configuration);
+builder.Services.AddPermissionAuthorization();
 builder.Services.AddPersistence(builder.Configuration);
 builder.Services.AddIdentityServices();
 builder.Services.AddApplicationServices();

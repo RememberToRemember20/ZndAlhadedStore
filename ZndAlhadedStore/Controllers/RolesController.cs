@@ -23,8 +23,8 @@ namespace ZndAlhadedStore.Controllers
         public RolesController(ISender sender) => _sender = sender;
 
         // RolesController
-        //[RequirePermission(Permissions.Roles.Manage)]
-        [HttpGet]
+        [RequirePermission(Permissions.Roles.Manage)]
+        [HttpGet("GetRoles")]
         public async Task<IActionResult> GetRoles([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
             var result = await _sender.Send(new GetRolesQuery(page, pageSize));
@@ -70,7 +70,7 @@ namespace ZndAlhadedStore.Controllers
             return result.IsSuccess ? NoContent() : BadRequest(result.Error);
         }
         [RequirePermission(Permissions.Roles.Manage)]
-        [HttpPost]
+        [HttpPost("CreateRole")]
         public async Task<IActionResult> CreateRole(CreateRoleRequest request)
         {
             var role = new ApplicationRole { Name = request.Name, Description = request.Description };

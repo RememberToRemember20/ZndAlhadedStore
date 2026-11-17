@@ -13,5 +13,8 @@ namespace AuthKit.Common
         public const string InvalidToken = "invalid_token";
         public const string AccountUnavailable = "account_unavailable";
         public const string Exception = "exception";
+        public const string InvalidRole = "invalid_role";
+        public const string PrivilegeEscalation = "privilege_escalation";
+        public const string ProvisioningRejected = "provisioning_rejected";
     }
 }

@@ -2,10 +2,6 @@
 using AuthKit.Entities;
 using AuthKit.Models;
 using Microsoft.AspNetCore.Identity;
-using Shared.DTOs.Auth;
-
-
-
 
 namespace AuthKit.Services.Interfaces
 {

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace AuthKit.Common
 {
-    internal static class UrlTokenEncoder
+    public static class UrlTokenEncoder
     {
         public static string Encode(string token) =>
             WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));

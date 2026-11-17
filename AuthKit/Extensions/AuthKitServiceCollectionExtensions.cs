@@ -21,6 +21,8 @@ using AuthKit.Features.AccessControl.RemoveRoleFromUser.Handler;
 using AuthKit.Features.AccessControl.RevokePermissionFromRole;
 using AuthKit.Features.Auth.Email.Command;
 using AuthKit.Features.Auth.Email.Handler;
+using AuthKit.Features.Auth.InventUser.Command;
+using AuthKit.Features.Auth.InventUser.Handler;
 using AuthKit.Features.Auth.Login.Command;
 using AuthKit.Features.Auth.Login.Handler;
 using AuthKit.Features.Auth.Logout.Command;
@@ -261,6 +263,20 @@ namespace AuthKit.Extensions
         {
             services.AddHttpContextAccessor();
             services.AddSingleton<IAuditLogger, EfAuditLogger<TContext>>();
+            return services;
+        }
+        public static IServiceCollection AddAuthKitUserInvitation<TUser, TRole, TKey, TContext>(this IServiceCollection services)
+        where TUser : IdentityUser<TKey>
+        where TRole : IdentityRole<TKey>
+        where TKey : IEquatable<TKey>
+        where TContext : DbContext
+        {
+            services.AddScoped<IUserPermissionResolver<TKey>, UserPermissionResolver<TKey, TContext>>();
+
+            services.AddScoped<IRequestHandler<InviteUserCommand<TUser, TKey>, Result<string>>,
+                InviteUserCommandHandler<TUser, TRole, TKey, TContext>>();
+            services.AddScoped<IValidator<InviteUserCommand<TUser, TKey>>, InviteUserCommandValidator<TUser, TKey>>();
+
             return services;
         }
 

@@ -9,6 +9,6 @@ namespace ZndAlhadedStore.Entity
 
         public string Department { get; set; } = string.Empty;
         public decimal Budget { get; set; }
-        public int TeamSize { get; set; }
+        public int? TeamSize { get; set; }
     }
 }
