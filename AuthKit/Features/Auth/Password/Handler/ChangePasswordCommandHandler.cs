@@ -12,7 +12,7 @@ using System.Text;
 
 namespace AuthKit.Features.Auth.Password.Handler
 {
-    public class ChangePasswordCommandHandler<TUser, TKey, TContext> : IRequestHandler<ChangePasswordCommand, Result<AuthResult>>
+    internal class ChangePasswordCommandHandler<TUser, TKey, TContext> : IRequestHandler<ChangePasswordCommand, Result<AuthResult>>
      where TUser : IdentityUser<TKey>
      where TKey : IEquatable<TKey>
      where TContext : DbContext
@@ -41,13 +41,13 @@ namespace AuthKit.Features.Auth.Password.Handler
         {
             var user = await _userManager.FindByIdAsync(request.UserId);
             if (user is null)
-                return Result<AuthResult>.Failure("الحساب غير متاح.");
+                return Result<AuthResult>.Failure(AuthErrorCodes.AccountUnavailable);
 
             var check = await _signInManager.CheckPasswordSignInAsync(user, request.CurrentPassword, lockoutOnFailure: true);
             if (check.IsLockedOut)
-                return Result<AuthResult>.Failure("تم قفل الحساب مؤقتاً بسبب محاولات فاشلة متكررة.");
+                return Result<AuthResult>.Failure(AuthErrorCodes.LockedOut);
             if (!check.Succeeded)
-                return Result<AuthResult>.Failure("كلمة المرور الحالية غير صحيحة.");
+                return Result<AuthResult>.Failure(AuthErrorCodes.InvalidCurrentPassword);
 
             await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
             try
@@ -69,8 +69,9 @@ namespace AuthKit.Features.Auth.Password.Handler
             {
                 await transaction.RollbackAsync(cancellationToken);
                 _logger.LogError(ex, "فشل تغيير كلمة المرور، تم التراجع الكامل.");
-                return Result<AuthResult>.Failure("حدث خطأ أثناء تغيير كلمة المرور. حاول مرة أخرى.");
+                return Result<AuthResult>.Failure(AuthErrorCodes.Exception);
             }
         }
     }
 }
+

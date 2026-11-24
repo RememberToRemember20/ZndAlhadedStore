@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 
 namespace AuthKit.Authorization.PermissionFoldar.Command
 {
-    public class PermissionPolicyProvider : IAuthorizationPolicyProvider
+    internal class PermissionPolicyProvider : IAuthorizationPolicyProvider
     {
         private readonly DefaultAuthorizationPolicyProvider _fallbackPolicyProvider;
 
@@ -30,3 +30,4 @@ namespace AuthKit.Authorization.PermissionFoldar.Command
             _fallbackPolicyProvider.GetFallbackPolicyAsync();
     }
 }
+

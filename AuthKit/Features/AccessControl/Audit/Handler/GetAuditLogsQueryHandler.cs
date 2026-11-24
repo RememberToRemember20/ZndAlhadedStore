@@ -10,7 +10,7 @@ using System.Text;
 
 namespace AuthKit.Features.AccessControl.Audit.Handler
 {
-    public class GetAuditLogsQueryHandler<TContext> : IRequestHandler<GetAuditLogsQuery, Result<PagedResult<AuditLogDto>>>
+    internal class GetAuditLogsQueryHandler<TContext> : IRequestHandler<GetAuditLogsQuery, Result<PagedResult<AuditLogDto>>>
      where TContext : DbContext
     {
         private readonly TContext _db;
@@ -38,3 +38,4 @@ namespace AuthKit.Features.AccessControl.Audit.Handler
         }
     }
 }
+

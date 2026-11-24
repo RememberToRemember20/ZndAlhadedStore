@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AuthKit.Features.AccessControl.GetRoles.Handler
 {
-    public class GetRolesQueryHandler<TRole, TKey> : IRequestHandler<GetRolesQuery, Result<PagedResult<RoleDto>>>
+    internal class GetRolesQueryHandler<TRole, TKey> : IRequestHandler<GetRolesQuery, Result<PagedResult<RoleDto>>>
     where TRole : IdentityRole<TKey>
     where TKey : IEquatable<TKey>
     {
@@ -31,3 +31,4 @@ namespace AuthKit.Features.AccessControl.GetRoles.Handler
         }
     }
 }
+

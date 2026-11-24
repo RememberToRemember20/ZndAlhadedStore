@@ -9,7 +9,7 @@ using System.ComponentModel;
 
 namespace AuthKit.Features.Auth.Logout.Handler
 {
-    public class LogoutCommandHandler<TUser, TKey, TContext> : IRequestHandler<LogoutCommand, Result>
+    internal class LogoutCommandHandler<TUser, TKey, TContext> : IRequestHandler<LogoutCommand, Result>
     where TUser : IdentityUser<TKey>
     where TKey : IEquatable<TKey>
     where TContext : DbContext
@@ -42,3 +42,4 @@ namespace AuthKit.Features.Auth.Logout.Handler
         }
     }
 }
+

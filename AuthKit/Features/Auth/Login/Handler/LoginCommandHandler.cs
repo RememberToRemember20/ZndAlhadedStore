@@ -11,7 +11,7 @@ using Microsoft.Extensions.Options;
 
 namespace AuthKit.Features.Auth.Login.Handler
 {
-    public class LoginCommandHandler<TUser, TKey> : IRequestHandler<LoginCommand, Result<AuthResult>>
+    internal class LoginCommandHandler<TUser, TKey> : IRequestHandler<LoginCommand, Result<AuthResult>>
     where TUser : IdentityUser<TKey>
     where TKey : IEquatable<TKey>
     {
@@ -44,23 +44,24 @@ namespace AuthKit.Features.Auth.Login.Handler
         {
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user is null)
-                return Result<AuthResult>.Failure("بيانات الدخول غير صحيحة.");
+                return Result<AuthResult>.Failure(AuthErrorCodes.InvalidCredentials);
 
             if (_accessGuard is not null && !_accessGuard.CanSignIn(user))
-                return Result<AuthResult>.Failure("بيانات الدخول غير صحيحة.");
+                return Result<AuthResult>.Failure(AuthErrorCodes.InvalidCredentials);
 
             var signInResult = await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
 
             if (signInResult.IsLockedOut)
-                return Result<AuthResult>.Failure("تم قفل الحساب مؤقتاً بسبب محاولات دخول فاشلة متكررة.", AuthErrorCodes.LockedOut);
+                return Result<AuthResult>.Failure( AuthErrorCodes.LockedOut);
 
             if (!signInResult.Succeeded)
-                return Result<AuthResult>.Failure("بيانات الدخول غير صحيحة.", AuthErrorCodes.InvalidCredentials);   // الثلاثة أماكن (مستخدم غير موجود / Guard / كلمة سر غلط)
+                return Result<AuthResult>.Failure(AuthErrorCodes.InvalidCredentials);   // الثلاثة أماكن (مستخدم غير موجود / Guard / كلمة سر غلط)
             if (_options.RequireConfirmedEmail && !await _userManager.IsEmailConfirmedAsync(user))
-                return Result<AuthResult>.Failure("يرجى تأكيد بريدك الإلكتروني أولاً قبل تسجيل الدخول.");
+                return Result<AuthResult>.Failure(AuthErrorCodes.EmailNotConfirmed);
             _audit.SetActor(user.Id.ToString()!);
             var authResult = await _tokenIssuer.IssueTokensAsync(user);
             return Result<AuthResult>.Success(authResult);
         }
     }
 }
+

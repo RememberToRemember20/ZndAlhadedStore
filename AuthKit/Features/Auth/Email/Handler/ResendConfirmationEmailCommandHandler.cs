@@ -10,7 +10,7 @@ using System.Text;
 
 namespace AuthKit.Features.Auth.Email.Handler
 {
-    public class ResendConfirmationEmailCommandHandler<TUser, TKey> : IRequestHandler<ResendConfirmationEmailCommand, Result>
+    internal class ResendConfirmationEmailCommandHandler<TUser, TKey> : IRequestHandler<ResendConfirmationEmailCommand, Result>
     where TUser : IdentityUser<TKey>
     where TKey : IEquatable<TKey>
     {
@@ -54,3 +54,4 @@ namespace AuthKit.Features.Auth.Email.Handler
         }
     }
 }
+

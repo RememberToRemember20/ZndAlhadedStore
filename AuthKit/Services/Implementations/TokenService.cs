@@ -1,4 +1,5 @@
-﻿using AuthKit.Services.Interfaces;
+﻿using AuthKit.Authorization.PermissionFoldar.Command;
+using AuthKit.Services.Interfaces;
 using AuthKit.Settings;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
@@ -12,7 +13,7 @@ using System.Text;
 
 namespace AuthKit.Services.Implementations
 {
-    public class TokenService<TUser, TKey> : ITokenService<TUser, TKey>
+    internal class TokenService<TUser, TKey> : ITokenService<TUser, TKey>
     where TUser : IdentityUser<TKey>
     where TKey : IEquatable<TKey>
     {
@@ -37,7 +38,7 @@ namespace AuthKit.Services.Implementations
         };
 
             claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
-            claims.AddRange(permissions.Select(p => new Claim("permission", p)));
+            claims.AddRange(permissions.Select(p => new Claim(AuthKitClaims.Permission, p)));
 
             if (_customClaimsProvider is not null)
                 claims.AddRange(_customClaimsProvider.GetClaims(user));
@@ -97,3 +98,4 @@ namespace AuthKit.Services.Implementations
         }
     }
 }
+

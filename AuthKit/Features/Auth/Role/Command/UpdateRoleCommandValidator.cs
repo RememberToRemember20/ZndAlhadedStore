@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿using AuthKit.Common;
+using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
@@ -6,11 +7,13 @@ using System.Text;
 
 namespace AuthKit.Features.Auth.Role.Command
 {
-    public class UpdateRoleCommandValidator<TRole, TKey> : AbstractValidator<UpdateRoleCommand<TRole, TKey>>
-     where TRole : IdentityRole<TKey>
-     where TKey : IEquatable<TKey>
+    internal sealed class UpdateRoleCommandValidator : AbstractValidator<UpdateRoleCommand>
     {
-        public UpdateRoleCommandValidator() =>
-            RuleFor(x => x.NewName).NotEmpty().WithMessage("اسم الدور الجديد مطلوب.");
+        public UpdateRoleCommandValidator()
+        {
+            RuleFor(x => x.RoleId).NotEmpty();
+            RuleFor(x => x.NewName).NotEmpty().MaximumLength(256);
+        }
     }
 }
+

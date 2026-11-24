@@ -8,7 +8,7 @@ using System.Text;
 
 namespace AuthKit.Services.Implementations
 {
-    public class UserPermissionResolver<TKey, TContext> : IUserPermissionResolver<TKey>
+    internal class UserPermissionResolver<TKey, TContext> : IUserPermissionResolver<TKey>
      where TKey : IEquatable<TKey>
      where TContext : DbContext
     {
@@ -34,3 +34,4 @@ namespace AuthKit.Services.Implementations
         }
     }
 }
+

@@ -11,7 +11,7 @@ using System.Text;
 
 namespace AuthKit.Features.Auth.Password.Handler
 {
-    public class ForgotPasswordCommandHandler<TUser, TKey> : IRequestHandler<ForgotPasswordCommand, Result>
+    internal class ForgotPasswordCommandHandler<TUser, TKey> : IRequestHandler<ForgotPasswordCommand, Result>
     where TUser : IdentityUser<TKey>
     where TKey : IEquatable<TKey>
     {
@@ -54,3 +54,4 @@ namespace AuthKit.Features.Auth.Password.Handler
         }
     }
 }
+

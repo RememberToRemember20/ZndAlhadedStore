@@ -1,21 +1,17 @@
-﻿using FluentValidation;
+﻿using AuthKit.Common;
+using FluentValidation;
 using Microsoft.AspNetCore.Identity;
+using AuthKit.Features.Auth.Role.Command;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace AuthKit.Features.Auth.Role.Command
 {
-    public class CreateRoleCommandValidator<TRole, TKey> : AbstractValidator<CreateRoleCommand<TRole, TKey>>
-     where TRole : IdentityRole<TKey>
-     where TKey : IEquatable<TKey>
+
+    internal sealed class CreateRoleCommandValidator : AbstractValidator<CreateRoleCommand>
     {
-        public CreateRoleCommandValidator()
-        {
-            RuleFor(x => x.Role).NotNull();
-            RuleFor(x => x.Role.Name)
-                .NotEmpty().WithMessage("اسم الدور مطلوب.")
-                .When(x => x.Role is not null);
-        }
+        public CreateRoleCommandValidator() => RuleFor(x => x.Name).NotEmpty().MaximumLength(256);
     }
 }
+

@@ -12,12 +12,12 @@ using System.Text;
 
 namespace AuthKit.Features.Auth.Password.Handler
 {
-    public class ResetPasswordCommandHandler<TUser, TKey, TContext> : IRequestHandler<ResetPasswordCommand, Result>
+    internal class ResetPasswordCommandHandler<TUser, TKey, TContext> : IRequestHandler<ResetPasswordCommand, Result>
     where TUser : IdentityUser<TKey>
     where TKey : IEquatable<TKey>
     where TContext : DbContext
     {
-        private const string InvalidLinkMessage = "رابط الاسترجاع غير صالح أو منتهي الصلاحية.";
+        private const string InvalidLinkMessage = AuthErrorCodes.InvalidLink;
 
         private readonly UserManager<TUser> _userManager;
         private readonly IAuthTokenIssuer<TUser, TKey> _tokenIssuer;
@@ -69,8 +69,9 @@ namespace AuthKit.Features.Auth.Password.Handler
             {
                 await transaction.RollbackAsync(cancellationToken);
                 _logger.LogError(ex, "فشلت عملية إعادة تعيين كلمة المرور، تم التراجع الكامل.");
-                return Result.Failure("حدث خطأ أثناء إعادة تعيين كلمة المرور. حاول مرة أخرى.");
+                return Result.Failure(AuthErrorCodes.Exception);
             }
         }
     }
 }
+

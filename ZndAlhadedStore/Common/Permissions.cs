@@ -1,4 +1,6 @@
-﻿namespace ZndAlhadedStore.Common
+﻿using AuthKit.Authorization.PermissionFoldar.Command;
+
+namespace ZndAlhadedStore.Common
 {
     public static class Permissions
     {
@@ -17,14 +19,9 @@
             public const string AllTeams = "Staff.AllTeams";    // يرى ويضيف في كل الفرق
         }
 
-        public static class AuditLogs
-        {
-            public const string View = "AuditLogs.View";
-        }
-        public static class Roles
-        {
-            public const string Manage = "Roles.Manage";
-        }
+        public static class Roles { public const string Manage = AuthKitPermissions.Roles.Manage; }
+       
+        public static class AuditLogs { public const string View = AuthKitPermissions.AuditLogs.View; }
         public static IEnumerable<string> GetAll()
         {
             return typeof(Permissions)

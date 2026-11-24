@@ -7,7 +7,7 @@ using System.ComponentModel;
 
 namespace AuthKit.Features.Auth.LogoutAll.Handler
 {
-    public class LogoutAllCommandHandler<TUser, TKey> : IRequestHandler<LogoutAllCommand, Result>
+    internal class LogoutAllCommandHandler<TUser, TKey> : IRequestHandler<LogoutAllCommand, Result>
     where TUser : IdentityUser<TKey>
     where TKey : IEquatable<TKey>
     {
@@ -26,3 +26,4 @@ namespace AuthKit.Features.Auth.LogoutAll.Handler
         }
     }
 }
+

@@ -5,9 +5,10 @@ using System.Text;
 
 namespace AuthKit.Features.Auth.Email.Command
 {
-    public class ResendConfirmationEmailCommandValidator : AbstractValidator<ResendConfirmationEmailCommand>
+    internal class ResendConfirmationEmailCommandValidator : AbstractValidator<ResendConfirmationEmailCommand>
     {
         public ResendConfirmationEmailCommandValidator() =>
             RuleFor(x => x.Email).NotEmpty().EmailAddress();
     }
 }
+

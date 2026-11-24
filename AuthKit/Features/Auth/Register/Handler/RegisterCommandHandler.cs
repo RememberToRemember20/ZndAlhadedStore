@@ -15,7 +15,7 @@ namespace AuthKit.Features.Auth.Register.Handler
 {
 
 
-    public class RegisterCommandHandler<TUser, TKey, TContext> : IRequestHandler<RegisterCommand<TUser, TKey>, Result<RegisterResult>>
+    internal class RegisterCommandHandler<TUser, TKey, TContext> : IRequestHandler<RegisterCommand<TUser, TKey>, Result<RegisterResult>>
      where TUser : IdentityUser<TKey>
      where TKey : IEquatable<TKey>
      where TContext : DbContext
@@ -47,7 +47,7 @@ namespace AuthKit.Features.Auth.Register.Handler
         {
             var existingUser = await _userManager.FindByEmailAsync(request.User.Email!);
             if (existingUser is not null)
-                return Result<RegisterResult>.Failure("البريد الإلكتروني مستخدم بالفعل.");
+                return Result<RegisterResult>.Failure(AuthErrorCodes.EmailTaken);
 
             AuthResult? authResult = null;
 
@@ -70,7 +70,7 @@ namespace AuthKit.Features.Auth.Register.Handler
             {
                 await transaction.RollbackAsync(cancellationToken);
                 _logger.LogError(ex, "فشلت عملية إكمال التسجيل، تم التراجع الكامل عن إنشاء المستخدم.");
-                return Result<RegisterResult>.Failure("حدث خطأ أثناء إكمال عملية التسجيل. حاول مرة أخرى.");
+                return Result<RegisterResult>.Failure(AuthErrorCodes.Exception);
             }
 
             if (_options.SendConfirmationEmailOnRegister)
@@ -99,3 +99,4 @@ namespace AuthKit.Features.Auth.Register.Handler
         }
     }
 }
+

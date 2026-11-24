@@ -10,7 +10,7 @@ namespace AuthKit.Services.Interfaces
     where TKey : IEquatable<TKey>
     {
         Task<AuthResult> IssueTokensAsync(TUser user);
-        Task<AuthResult> RotateTokensAsync(TUser user, RefreshToken<TKey> currentToken);
+        Task<AuthResult?> RotateTokensAsync(TUser user, RefreshToken<TKey> currentToken);
         Task RevokeAllActiveTokensAsync(TKey userId, CancellationToken cancellationToken = default);
     }
 }

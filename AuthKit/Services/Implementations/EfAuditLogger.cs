@@ -9,7 +9,7 @@ using System.Text;
 
 namespace AuthKit.Services.Implementations
 {
-    public class EfAuditLogger<TContext> : IAuditLogger where TContext : DbContext
+    internal class EfAuditLogger<TContext> : IAuditLogger where TContext : DbContext
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<EfAuditLogger<TContext>> _logger;
@@ -49,3 +49,4 @@ namespace AuthKit.Services.Implementations
             value is null || value.Length <= max ? value : value[..max];
     }
 }
+

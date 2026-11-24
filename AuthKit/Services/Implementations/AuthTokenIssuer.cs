@@ -12,78 +12,95 @@ using Microsoft.Extensions.Options;
 
 namespace AuthKit.Services.Implementations
 {
-    public class AuthTokenIssuer<TUser, TRole, TKey, TContext> : IAuthTokenIssuer<TUser, TKey>
-    where TUser : IdentityUser<TKey>
-    where TRole : IdentityRole<TKey>
-    where TKey : IEquatable<TKey>
-    where TContext : IdentityDbContext<TUser, TRole, TKey>
+    internal class AuthTokenIssuer<TUser, TRole, TKey, TContext> : IAuthTokenIssuer<TUser, TKey>
+       where TUser : IdentityUser<TKey>
+       where TRole : IdentityRole<TKey>
+       where TKey : IEquatable<TKey>
+       where TContext : IdentityDbContext<TUser, TRole, TKey>
     {
         private readonly ITokenService<TUser, TKey> _tokenService;
         private readonly UserManager<TUser> _userManager;
+        private readonly IUserPermissionResolver<TKey> _permissions;
         private readonly TContext _dbContext;
         private readonly JwtSettings _jwtSettings;
         private readonly TimeProvider _time;
+
         public AuthTokenIssuer(
             ITokenService<TUser, TKey> tokenService,
             UserManager<TUser> userManager,
-            TContext dbContext, TimeProvider time,
-            IOptions<JwtSettings> jwtSettings)
+            IUserPermissionResolver<TKey> permissions,
+            TContext dbContext,
+            IOptions<JwtSettings> jwtSettings,
+            TimeProvider time)
         {
             _tokenService = tokenService;
             _userManager = userManager;
+            _permissions = permissions;
             _dbContext = dbContext;
-            _time = time;
             _jwtSettings = jwtSettings.Value;
+            _time = time;
         }
 
-        public Task<AuthResult> IssueTokensAsync(TUser user) => GenerateAndStoreTokensAsync(user, replacingToken: null);
+        public Task<AuthResult> IssueTokensAsync(TUser user)
+        {
+            var raw = _tokenService.GenerateRefreshToken();
+            return CreateAsync(user, raw, _tokenService.HashToken(raw), _time.GetUtcNow().UtcDateTime);
+        }
 
-        public Task<AuthResult> RotateTokensAsync(TUser user, RefreshToken<TKey> currentToken) =>
-            GenerateAndStoreTokensAsync(user, replacingToken: currentToken);
+        public async Task<AuthResult?> RotateTokensAsync(TUser user, RefreshToken<TKey> currentToken)
+        {
+            var now = _time.GetUtcNow().UtcDateTime;
+            var raw = _tokenService.GenerateRefreshToken();
+            var hash = _tokenService.HashToken(raw);
 
-        private async Task<AuthResult> GenerateAndStoreTokensAsync(TUser user, RefreshToken<TKey>? replacingToken)
+            // لو فيه Transaction خارجية بنشارك فيها، وإلا بنفتح واحدة
+            await using var transaction = _dbContext.Database.CurrentTransaction is null
+                ? await _dbContext.Database.BeginTransactionAsync()
+                : null;
+
+            var revoked = await _dbContext.Set<RefreshToken<TKey>>()
+                .Where(rt => rt.Id == currentToken.Id && rt.RevokedAt == null)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(rt => rt.RevokedAt, (DateTime?)now)
+                    .SetProperty(rt => rt.ReplacedByTokenHash, hash));
+
+            if (revoked == 0)
+                return null;   // طلب آخر سبقه. الـ Dispose بيتراجع تلقائياً
+
+            var result = await CreateAsync(user, raw, hash, now);
+            if (transaction is not null)
+                await transaction.CommitAsync();
+
+            return result;
+        }
+
+        public async Task RevokeAllActiveTokensAsync(TKey userId, CancellationToken cancellationToken = default)
+        {
+            var now = _time.GetUtcNow().UtcDateTime;
+
+            await _dbContext.Set<RefreshToken<TKey>>()
+                .Where(rt => rt.UserId.Equals(userId) && rt.RevokedAt == null)
+                .ExecuteUpdateAsync(s => s.SetProperty(rt => rt.RevokedAt, (DateTime?)now), cancellationToken);
+        }
+
+        private async Task<AuthResult> CreateAsync(TUser user, string rawRefreshToken, string refreshTokenHash, DateTime now)
         {
             var roles = await _userManager.GetRolesAsync(user);
-
-            var permissions = await _dbContext.UserRoles
-                .Where(ur => ur.UserId.Equals(user.Id))
-                .Join(_dbContext.Set<RolePermission<TKey>>(), ur => ur.RoleId, rp => rp.RoleId, (ur, rp) => rp.PermissionId)
-                .Join(_dbContext.Set<Permission>(), id => id, p => p.Id, (id, p) => p.Name)
-                .Distinct()
-                .ToListAsync();
+            var permissions = await _permissions.GetUserPermissionsAsync(user.Id);
 
             var accessToken = _tokenService.GenerateAccessToken(user, roles, permissions);
-            var refreshToken = _tokenService.GenerateRefreshToken();
-            var refreshTokenHash = _tokenService.HashToken(refreshToken);
-
-            if (replacingToken is not null)
-            {
-                replacingToken.RevokedAt = _time.GetUtcNow().UtcDateTime;
-                replacingToken.ReplacedByTokenHash = refreshTokenHash;
-            }
 
             _dbContext.Set<RefreshToken<TKey>>().Add(new RefreshToken<TKey>
             {
                 UserId = user.Id,
                 TokenHash = refreshTokenHash,
-                ExpiresAt = _time.GetUtcNow().UtcDateTime.AddDays(_jwtSettings.RefreshTokenExpirationDays)
+                CreatedAt = now,
+                ExpiresAt = now.AddDays(_jwtSettings.RefreshTokenExpirationDays)
             });
-
             await _dbContext.SaveChangesAsync();
 
-            return new AuthResult(accessToken, refreshToken, _time.GetUtcNow().UtcDateTime.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes));
-        }
-
-        public async Task RevokeAllActiveTokensAsync(TKey userId, CancellationToken cancellationToken = default)
-        {
-            var activeTokens = await _dbContext.Set<RefreshToken<TKey>>()
-                .Where(rt => rt.UserId.Equals(userId) && rt.RevokedAt == null)
-                .ToListAsync(cancellationToken);
-
-            foreach (var token in activeTokens)
-                token.RevokedAt = _time.GetUtcNow().UtcDateTime;
-
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            return new AuthResult(accessToken, rawRefreshToken, now.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes));
         }
     }
 }
+

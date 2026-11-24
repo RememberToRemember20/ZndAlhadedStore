@@ -1,13 +1,15 @@
-﻿using FluentValidation;
+﻿using AuthKit.Common;
+using FluentValidation;
 
 namespace AuthKit.Features.AccessControl.AssignPermissionToRole.Command
 {
-    public class AssignPermissionToRoleCommandValidator : AbstractValidator<AssignPermissionToRoleCommand>
+    internal class AssignPermissionToRoleCommandValidator : AbstractValidator<AssignPermissionToRoleCommand>
     {
         public AssignPermissionToRoleCommandValidator()
         {
-            RuleFor(x => x.RoleId).NotEmpty().WithMessage("معرّف الدور مطلوب.");
-            RuleFor(x => x.PermissionId).GreaterThan(0).WithMessage("معرّف الصلاحية غير صالح.");
+            RuleFor(x => x.RoleId).NotEmpty().WithErrorCode(ValidationCodes.RoleIdRequired);
+            RuleFor(x => x.PermissionId).GreaterThan(0).WithErrorCode(ValidationCodes.PermissionIdInvalid);
         }
     }
 }
+

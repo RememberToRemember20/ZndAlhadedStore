@@ -1,5 +1,7 @@
-﻿using AuthKit.Common;
+﻿using AuthKit.Authorization.PermissionFoldar.Command;
+using AuthKit.Common;
 using AuthKit.Models;
+using AuthKit.Services.Interfaces;
 using MediatR;
 using System;
 using System.Collections.Generic;
@@ -13,6 +15,7 @@ namespace AuthKit.Features.AccessControl.Audit.Query
     public record GetAuditLogsQuery(
         int Page = 1, int PageSize = 20,
         string? EventType = null, string? ActorUserId = null, bool? Succeeded = null,
-        DateTime? FromUtc = null, DateTime? ToUtc = null) : IRequest<Result<PagedResult<AuditLogDto>>>;
+        DateTime? FromUtc = null, DateTime? ToUtc = null) : IRequest<Result<PagedResult<AuditLogDto>>>, IPermissionProtectedRequest
+    { public string RequiredPermission => AuthKitPermissions.AuditLogs.View; }
 
 }

@@ -12,7 +12,7 @@ using System.Text;
 
 namespace AuthKit.Features.Auth.InventUser.Handler
 {
-    public class InviteUserCommandHandler<TUser, TRole, TKey, TContext>
+    internal class InviteUserCommandHandler<TUser, TRole, TKey, TContext>
     : IRequestHandler<InviteUserCommand<TUser, TKey>, Result<string>>
     where TUser : IdentityUser<TKey>
     where TRole : IdentityRole<TKey>
@@ -51,20 +51,20 @@ namespace AuthKit.Features.Auth.InventUser.Handler
             {
                 var role = await _roleManager.FindByNameAsync(name);
                 if (role is null)
-                    return Result<string>.Failure($"الدور '{name}' غير موجود.", AuthErrorCodes.InvalidRole);
+                    return Result<string>.Failure(AuthErrorCodes.InvalidRole);
                 roles.Add(role);
             }
 
             // 2) منع تصعيد الصلاحيات: لا تمنح إلا ما تملكه
             var caller = await _userManager.FindByIdAsync(request.InvitedByUserId);
             if (caller is null)
-                return Result<string>.Failure("الحساب غير متاح.", AuthErrorCodes.AccountUnavailable);
+                return Result<string>.Failure( AuthErrorCodes.AccountUnavailable);
 
             var callerPermissions = await _permissions.GetUserPermissionsAsync(caller.Id, cancellationToken);
             var requested = await _permissions.GetRolePermissionsAsync(roles.Select(r => r.Id).ToList(), cancellationToken);
 
             if (requested.Except(callerPermissions, StringComparer.Ordinal).Any())
-                return Result<string>.Failure("لا يمكنك منح دور يتضمن صلاحيات لا تملكها.", AuthErrorCodes.PrivilegeEscalation);
+                return Result<string>.Failure(AuthErrorCodes.PrivilegeEscalation);
 
             // 3) قواعد التطبيق الخاصة
             var roleNames = roles.Select(r => r.Name!).ToList();
@@ -74,11 +74,12 @@ namespace AuthKit.Features.Auth.InventUser.Handler
             {
                 var error = await validator.ValidateAsync(context, cancellationToken);
                 if (error is not null)
-                    return Result<string>.Failure(error, AuthErrorCodes.ProvisioningRejected);
+                    return Result<string>.Failure(AuthErrorCodes.ProvisioningRejected, [error]);   
+
             }
 
             if (await _userManager.FindByEmailAsync(request.User.Email!) is not null)
-                return Result<string>.Failure("البريد الإلكتروني مستخدم بالفعل.");
+                return Result<string>.Failure(AuthErrorCodes.EmailTaken);
 
             // 4) إنشاء ذري: المستخدم (ومعه بروفايله لو موجود في الـ Graph) + الأدوار
             await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
@@ -104,7 +105,7 @@ namespace AuthKit.Features.Auth.InventUser.Handler
             {
                 await transaction.RollbackAsync(cancellationToken);
                 _logger.LogError(ex, "فشل إنشاء المستخدم المدعو، تم التراجع الكامل.");
-                return Result<string>.Failure("حدث خطأ أثناء إنشاء الحساب. حاول مرة أخرى.", AuthErrorCodes.Exception);
+                return Result<string>.Failure(AuthErrorCodes.Exception);
             }
 
             // 5) الدعوة بعد نجاح الحفظ؛ فشلها ما بيلغيش الحساب
@@ -126,3 +127,4 @@ namespace AuthKit.Features.Auth.InventUser.Handler
             "Aa1!" + Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
     }
 }
+

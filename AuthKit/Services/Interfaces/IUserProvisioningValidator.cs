@@ -9,6 +9,7 @@ namespace AuthKit.Services.Interfaces
     public interface IUserProvisioningValidator<TUser>
     {
         /// يرجع رسالة خطأ لرفض الإنشاء، أو null للموافقة
+        /// 
         Task<string?> ValidateAsync(UserProvisioningContext<TUser> context, CancellationToken cancellationToken);
     }
 }

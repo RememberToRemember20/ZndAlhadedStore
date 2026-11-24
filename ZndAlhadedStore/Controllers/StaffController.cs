@@ -8,6 +8,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using ZndAlhadedStore.Common;
 using ZndAlhadedStore.Entity;
+using ZndAlhadedStore.Feautres.Staff.Query;
 using ZndAlhadedStore.Identity;
 
 namespace ZndAlhadedStore.Controllers

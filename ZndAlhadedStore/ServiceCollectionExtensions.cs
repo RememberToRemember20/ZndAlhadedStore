@@ -72,8 +72,7 @@ namespace ZndAlhadedStore
                 cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
                 cfg.AddAuthKitBehaviors();     // بدل cfg.AddOpenBehavior(typeof(ValidationBehavior<,>))
             });
-            services.AddExceptionHandler<GlobalExceptionHandler>();
-            services.AddProblemDetails();
+            services.AddAuthKitExceptionHandling();
             services.AddAuthKitPasswordRecovery<ApplicationUser, string, AppDbContext>();
             services.AddAuthKitEmailConfirmation<ApplicationUser, string>();
             services.AddAuthKitUserInvitation<ApplicationUser, ApplicationRole, string, AppDbContext>();

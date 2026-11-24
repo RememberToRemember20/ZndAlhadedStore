@@ -3,12 +3,12 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace AuthKit.Authorization.PermissionFoldar.Handler
 {
-    public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionRequirement>
+    internal class PermissionAuthorizationHandler : AuthorizationHandler<PermissionRequirement>
     {
         protected override Task HandleRequirementAsync(
             AuthorizationHandlerContext context, PermissionRequirement requirement)
         {
-            var hasPermission = context.User.HasClaim("permission", requirement.Permission);
+            var hasPermission = context.User.HasClaim(AuthKitClaims.Permission, requirement.Permission);
 
             if (hasPermission)
                 context.Succeed(requirement);
@@ -17,3 +17,4 @@ namespace AuthKit.Authorization.PermissionFoldar.Handler
         }
     }
 }
+

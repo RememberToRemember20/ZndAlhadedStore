@@ -8,11 +8,11 @@ using System.Text;
 
 namespace AuthKit.Features.Auth.Email.Handler
 {
-    public class ConfirmEmailCommandHandler<TUser, TKey> : IRequestHandler<ConfirmEmailCommand, Result>
+    internal class ConfirmEmailCommandHandler<TUser, TKey> : IRequestHandler<ConfirmEmailCommand, Result>
      where TUser : IdentityUser<TKey>
      where TKey : IEquatable<TKey>
     {
-        private const string InvalidLinkMessage = "رابط التأكيد غير صالح أو منتهي الصلاحية.";
+        private const string InvalidLinkMessage = AuthErrorCodes.InvalidLink;
         private readonly UserManager<TUser> _userManager;
 
         public ConfirmEmailCommandHandler(UserManager<TUser> userManager) => _userManager = userManager;
@@ -28,3 +28,4 @@ namespace AuthKit.Features.Auth.Email.Handler
         }
     }
 }
+

@@ -1,29 +1,31 @@
 ﻿using AuthKit.Entities;
+using AuthKit.Middleware;
 using AuthKit.Services.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Text;
 
 namespace AuthKit.Common.Behaviors
 {
-    public class AuditBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    internal class AuditBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
      where TRequest : notnull
     {
         private readonly IAuditContext _context;
+        private readonly TimeProvider _time;
         private readonly ILogger<AuditBehavior<TRequest, TResponse>> _logger;
         private readonly IAuditLogger? _auditLogger;
-        private readonly TimeProvider _time;
+
         public AuditBehavior(
             IAuditContext context, TimeProvider time,
-            ILogger<AuditBehavior<TRequest, TResponse>> logger,
-            IAuditLogger? auditLogger = null)
+            ILogger<AuditBehavior<TRequest, TResponse>> logger, IAuditLogger? auditLogger = null)
         {
             _context = context;
+            _time = time;
             _logger = logger;
             _auditLogger = auditLogger;
-            _time = time;
         }
 
         public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
@@ -38,14 +40,15 @@ namespace AuthKit.Common.Behaviors
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                await WriteAsync(auditable, succeeded: false, AuthErrorCodes.Exception);
+                if (ex is not ValidationException)
+                    await WriteAsync(auditable, false, ex is ForbiddenException ? AuthErrorCodes.Forbidden : AuthErrorCodes.Exception);
                 throw;
             }
 
             if (response is Result result)
                 await WriteAsync(auditable, result.IsSuccess, result.ErrorCode);
             else
-                await WriteAsync(auditable, succeeded: true, failureCode: null);
+                await WriteAsync(auditable, true, null);
 
             return response;
         }
@@ -77,3 +80,4 @@ namespace AuthKit.Common.Behaviors
         }
     }
 }
+

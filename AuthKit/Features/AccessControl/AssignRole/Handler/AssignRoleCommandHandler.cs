@@ -2,33 +2,38 @@
 using Microsoft.AspNetCore.Identity;
 using AuthKit.Common;
 using AuthKit.Features.AccessControl.AssignRole.Command;
+using AuthKit.Services.Interfaces;
 
 namespace AuthKit.Features.AccessControl.AssignRole.Handler
 {
-    public class AssignRoleCommandHandler<TUser, TRole, TKey> : IRequestHandler<AssignRoleCommand, Result>
+    internal class AssignRoleCommandHandler<TUser, TRole, TKey> : IRequestHandler<AssignRoleCommand, Result>
     where TUser : IdentityUser<TKey>
     where TRole : IdentityRole<TKey>
     where TKey : IEquatable<TKey>
     {
         private readonly UserManager<TUser> _userManager;
         private readonly RoleManager<TRole> _roleManager;
-
-        public AssignRoleCommandHandler(UserManager<TUser> userManager, RoleManager<TRole> roleManager)
+        private readonly IPrivilegeGuard<TKey> _privilegeGuard;
+        public AssignRoleCommandHandler(UserManager<TUser> userManager, RoleManager<TRole> roleManager, IPrivilegeGuard<TKey> privilegeGuard)
         {
             _userManager = userManager;
             _roleManager = roleManager;
+            _privilegeGuard = privilegeGuard;
         }
 
         public async Task<Result> Handle(AssignRoleCommand request, CancellationToken cancellationToken)
         {
             var user = await _userManager.FindByIdAsync(request.TargetUserId);
-            if (user is null) return Result.Failure("المستخدم غير موجود.");
+            if (user is null) return Result.Failure(AuthErrorCodes.UserNotFound);
 
-            if (!await _roleManager.RoleExistsAsync(request.RoleName))
-                return Result.Failure("الدور غير موجود.");
+            var role = await _roleManager.FindByNameAsync(request.RoleName);
+            if (role is null) return Result.Failure(AuthErrorCodes.InvalidRole);
+
+            var allowed = await _privilegeGuard.RequireCallerDominatesRoleAsync(role.Id, cancellationToken);
+            if (!allowed.IsSuccess) return allowed;
 
             if (await _userManager.IsInRoleAsync(user, request.RoleName))
-                return Result.Failure("المستخدم لديه هذا الدور بالفعل.");
+                return Result.Failure(AuthErrorCodes.UserAlreadyInRole);
 
             var result = await _userManager.AddToRoleAsync(user, request.RoleName);
             return result.Succeeded
@@ -37,3 +42,4 @@ namespace AuthKit.Features.AccessControl.AssignRole.Handler
         }
     }
 }
+

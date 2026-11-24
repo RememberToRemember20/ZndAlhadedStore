@@ -9,7 +9,7 @@ using System.Text;
 
 namespace AuthKit.Features.AccessControl.GetPermissions.Handler
 {
-    public class GetPermissionsQueryHandler<TContext> : IRequestHandler<GetPermissionsQuery, Result<List<PermissionDto>>>
+    internal class GetPermissionsQueryHandler<TContext> : IRequestHandler<GetPermissionsQuery, Result<List<PermissionDto>>>
      where TContext : DbContext
     {
         private readonly TContext _dbContext;
@@ -25,3 +25,4 @@ namespace AuthKit.Features.AccessControl.GetPermissions.Handler
         }
     }
 }
+

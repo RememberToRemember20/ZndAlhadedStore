@@ -20,7 +20,7 @@ using System.Security.Claims;
 
 namespace AuthKit.Features.Auth.RefreshToken.Handler
 {
-    public class RefreshTokenCommandHandler<TUser, TKey, TContext> : IRequestHandler<RefreshTokenCommand, Result<AuthResult>>
+    internal class RefreshTokenCommandHandler<TUser, TKey, TContext> : IRequestHandler<RefreshTokenCommand, Result<AuthResult>>
     where TUser : IdentityUser<TKey>
     where TKey : IEquatable<TKey>
     where TContext : DbContext
@@ -33,10 +33,11 @@ namespace AuthKit.Features.Auth.RefreshToken.Handler
         private readonly IUserAccessGuard<TUser>? _accessGuard;
         private readonly AuthKitOptions _options;
         private readonly IAuditContext _audit;
+        private readonly TimeProvider _time;
 
         public RefreshTokenCommandHandler(
             ITokenService<TUser, TKey> tokenService, UserManager<TUser> userManager, TContext dbContext,
-            IAuthTokenIssuer<TUser, TKey> tokenIssuer, ILogger<RefreshTokenCommandHandler<TUser, TKey, TContext>> logger, IAuditContext audit, IUserAccessGuard<TUser>? accessGuard, IOptions<AuthKitOptions> options)
+            IAuthTokenIssuer<TUser, TKey> tokenIssuer, ILogger<RefreshTokenCommandHandler<TUser, TKey, TContext>> logger, IAuditContext audit, TimeProvider time, IUserAccessGuard<TUser>? accessGuard, IOptions<AuthKitOptions> options)
         {
             _tokenService = tokenService;
             _userManager = userManager;
@@ -44,6 +45,7 @@ namespace AuthKit.Features.Auth.RefreshToken.Handler
             _tokenIssuer = tokenIssuer;
             _audit = audit;
             _logger = logger;
+            _time = time;
             _accessGuard = accessGuard;
             _options = options.Value;
         }
@@ -58,12 +60,12 @@ namespace AuthKit.Features.Auth.RefreshToken.Handler
             catch (Exception ex) when (ex is SecurityTokenException or ArgumentException)
             {
                 _logger.LogWarning(ex, "فشل التحقق من الـ Access Token أثناء محاولة التجديد.");
-                return Result<AuthResult>.Failure("بيانات التوكن غير صالحة.");
+                return Result<AuthResult>.Failure(AuthErrorCodes.InvalidToken);
             }
 
             var userIdString = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
             if (string.IsNullOrEmpty(userIdString))
-                return Result<AuthResult>.Failure("بيانات التوكن غير صالحة.");
+                return Result<AuthResult>.Failure(AuthErrorCodes.InvalidToken);
 
             var userId = (TKey)TypeDescriptor.GetConverter(typeof(TKey)).ConvertFromString(userIdString)!;
             var incomingHash = _tokenService.HashToken(request.RefreshToken);
@@ -72,27 +74,31 @@ namespace AuthKit.Features.Auth.RefreshToken.Handler
                 .FirstOrDefaultAsync(rt => rt.TokenHash == incomingHash, cancellationToken);
 
             if (storedToken is null || !storedToken.UserId.Equals(userId))
-                return Result<AuthResult>.Failure("جلسة غير صالحة، يرجى تسجيل الدخول مرة أخرى.");
-
+                return Result<AuthResult>.Failure(AuthErrorCodes.InvalidToken);
             if (storedToken.RevokedAt is not null)
             {
                 await _tokenIssuer.RevokeAllActiveTokensAsync(userId, cancellationToken);
                 _logger.LogWarning("اكتشاف إعادة استخدام Refresh Token ملغى للمستخدم {UserId}.", userId);
-                return Result<AuthResult>.Failure("تم اكتشاف نشاط مشبوه، تم إنهاء جميع الجلسات. يرجى تسجيل الدخول مرة أخرى.",
+                return Result<AuthResult>.Failure(
      AuthErrorCodes.TokenReuseDetected);
             }
 
-            if (!storedToken.IsActive)
-                return Result<AuthResult>.Failure("انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى.");
+            if (!storedToken.IsActiveAt(_time.GetUtcNow().UtcDateTime))
+                return Result<AuthResult>.Failure(AuthErrorCodes.SessionExpired);
 
             var user = await _userManager.FindByIdAsync(userIdString);
             if (user is null || (_accessGuard is not null && !_accessGuard.CanSignIn(user)))
-                return Result<AuthResult>.Failure("الحساب غير متاح.");
+                return Result<AuthResult>.Failure(AuthErrorCodes.AccountUnavailable);
             if (_options.RequireConfirmedEmail && !await _userManager.IsEmailConfirmedAsync(user))
-                return Result<AuthResult>.Failure("يرجى تأكيد بريدك الإلكتروني أولاً.");
+                return Result<AuthResult>.Failure(AuthErrorCodes.EmailNotConfirmed);
             _audit.SetActor(userIdString);
+
             var authResult = await _tokenIssuer.RotateTokensAsync(user, storedToken);
+            if (authResult is null)
+                return Result<AuthResult>.Failure(AuthErrorCodes.InvalidToken);
+
             return Result<AuthResult>.Success(authResult);
         }
     }
 }
+

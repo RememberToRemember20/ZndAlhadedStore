@@ -11,7 +11,7 @@ using System.Text;
 
 namespace AuthKit.Features.AccessControl.GetRolePermissions.Handler
 {
-    public class GetRolePermissionsQueryHandler<TRole, TKey, TContext>
+    internal class GetRolePermissionsQueryHandler<TRole, TKey, TContext>
      : IRequestHandler<GetRolePermissionsQuery, Result<List<PermissionDto>>>
      where TRole : IdentityRole<TKey>
      where TKey : IEquatable<TKey>
@@ -29,7 +29,7 @@ namespace AuthKit.Features.AccessControl.GetRolePermissions.Handler
         public async Task<Result<List<PermissionDto>>> Handle(GetRolePermissionsQuery request, CancellationToken cancellationToken)
         {
             var role = await _roleManager.FindByIdAsync(request.RoleId);
-            if (role is null) return Result<List<PermissionDto>>.Failure("الدور غير موجود.");
+            if (role is null) return Result<List<PermissionDto>>.Failure(AuthErrorCodes.InvalidRole);
 
             var permissions = await _dbContext.Set<RolePermission<TKey>>()
                 .Where(rp => rp.RoleId.Equals(role.Id))
@@ -41,3 +41,4 @@ namespace AuthKit.Features.AccessControl.GetRolePermissions.Handler
         }
     }
 }
+

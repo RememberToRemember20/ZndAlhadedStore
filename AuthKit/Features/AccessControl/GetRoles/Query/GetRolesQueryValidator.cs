@@ -6,7 +6,7 @@ using System.Text;
 
 namespace AuthKit.Features.AccessControl.GetRoles.Query
 {
-    public class GetRolesQueryValidator : AbstractValidator<GetRolesQuery>
+    internal class GetRolesQueryValidator : AbstractValidator<GetRolesQuery>
     {
         public GetRolesQueryValidator()
         {
@@ -15,3 +15,4 @@ namespace AuthKit.Features.AccessControl.GetRoles.Query
         }
     }
 }
+

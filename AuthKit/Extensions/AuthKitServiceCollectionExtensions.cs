@@ -1,5 +1,6 @@
 ﻿
 
+using Auth.Middlewares;
 using AuthKit.Authorization.PermissionFoldar.Command;
 using AuthKit.Authorization.PermissionFoldar.Handler;
 using AuthKit.Common;
@@ -37,6 +38,8 @@ using AuthKit.Features.Auth.Register.Command;
 using AuthKit.Features.Auth.Register.Handler;
 using AuthKit.Features.Auth.Role.Command;
 using AuthKit.Features.Auth.Role.Handler;
+using AuthKit.Features.User.Handler;
+using AuthKit.Features.User.Query;
 using AuthKit.Models;
 using AuthKit.Services.Implementations;
 using AuthKit.Services.Interfaces;
@@ -64,8 +67,10 @@ namespace AuthKit.Extensions
         public static IServiceCollection AddJwtAuthentication(
             this IServiceCollection services, IConfiguration configuration, string sectionName = "Jwt")
         {
-            var jwtSettings = configuration.GetSection(sectionName).Get<JwtSettings>()
-                ?? throw new InvalidOperationException($"قسم الإعدادات '{sectionName}' غير موجود.");
+            var jwtSettings = configuration.GetSection(sectionName).Get<JwtSettings>();
+                var errors = JwtSettingsValidator.GetErrors(jwtSettings);
+            if (errors.Count > 0)
+                throw new InvalidOperationException("Invalid Jwt configuration: " + string.Join(" ", errors));
 
             services.Configure<JwtSettings>(configuration.GetSection(sectionName));
 
@@ -103,7 +108,8 @@ namespace AuthKit.Extensions
         }
         public static IServiceCollection AddAuthKitCore<TUser, TRole, TKey, TContext>(this IServiceCollection services)
     where TUser : IdentityUser<TKey>
-    where TRole : IdentityRole<TKey>
+    where TRole : IdentityRole<TKey>,new()
+
     where TKey : IEquatable<TKey>
     where TContext : IdentityDbContext<TUser, TRole, TKey>
         {
@@ -136,15 +142,13 @@ namespace AuthKit.Extensions
 
             services.AddScoped<IRequestHandler<RevokePermissionFromRoleCommand, Result>, RevokePermissionFromRoleCommandHandler<TRole, TKey, TContext>>();
 
-            services.AddScoped<IRequestHandler<CreateRoleCommand<TRole, TKey>, Result<TKey>>, CreateRoleCommandHandler<TRole, TKey>>();
-            services.AddScoped<IValidator<CreateRoleCommand<TRole, TKey>>, CreateRoleCommandValidator<TRole, TKey>>();
+            services.AddScoped<IRequestHandler<CreateRoleCommand, Result<string>>, CreateRoleCommandHandler<TRole, TKey>>();
+            services.AddScoped<IValidator<CreateRoleCommand>, CreateRoleCommandValidator>();
+            services.AddScoped<IRequestHandler<UpdateRoleCommand, Result>, UpdateRoleCommandHandler<TRole, TKey>>();
+            services.AddScoped<IValidator<UpdateRoleCommand>, UpdateRoleCommandValidator>();
+            services.AddScoped<IRequestHandler<DeleteRoleCommand, Result>, DeleteRoleCommandHandler<TUser, TRole, TKey>>();
 
-            services.AddScoped<IRequestHandler<UpdateRoleCommand<TRole, TKey>, Result>, UpdateRoleCommandHandler<TRole, TKey>>();
-            services.AddScoped<IValidator<UpdateRoleCommand<TRole, TKey>>, UpdateRoleCommandValidator<TRole, TKey>>();
-
-            services.AddScoped<IRequestHandler<DeleteRoleCommand<TKey>, Result>, DeleteRoleCommandHandler<TUser, TRole, TKey>>();
-
-            services.AddScoped<IRequestHandler<RemoveRoleFromUserCommand, Result>, RemoveRoleFromUserCommandHandler<TUser, TKey>>();
+            services.AddScoped<IRequestHandler<RemoveRoleFromUserCommand, Result>, RemoveRoleFromUserCommandHandler<TUser, TRole,TKey>>();
             services.AddScoped<IRequestHandler<RegisterCommand<TUser, TKey>, Result<RegisterResult>>, RegisterCommandHandler<TUser, TKey, TContext>>();
             services.AddScoped<IRequestHandler<ChangePasswordCommand, Result<AuthResult>>, ChangePasswordCommandHandler<TUser, TKey, TContext>>();
             services.AddScoped<IValidator<ChangePasswordCommand>, ChangePasswordCommandValidator>();
@@ -155,6 +159,10 @@ namespace AuthKit.Extensions
             services.AddScoped<IRequestHandler<GetAuditLogsQuery, Result<PagedResult<AuditLogDto>>>, GetAuditLogsQueryHandler<TContext>>();
             services.AddScoped<IValidator<GetAuditLogsQuery>, GetAuditLogsQueryValidator>();
             services.TryAddSingleton(TimeProvider.System);
+            services.AddScoped<ICurrentUser, HttpCurrentUser>();
+            services.AddScoped<IPrivilegeGuard<TKey>, PrivilegeGuard<TUser, TKey, TContext>>();
+            services.TryAddSingleton<IAuthErrorDescriber, NullAuthErrorDescriber>();
+            services.AddScoped<IRequestHandler<GetCurrentUserQuery, Result<CurrentUserDto>>, GetCurrentUserQueryHandler<TUser, TKey>>();
             return services;
         }
         public static IServiceCollection AddAuthRateLimiting(this IServiceCollection services)
@@ -178,7 +186,7 @@ namespace AuthKit.Extensions
                 };
 
                 // سياسة صارمة: Login/Register — الأكثر حساسية (استهداف مباشر لمحاولات التخمين)
-                options.AddPolicy("auth-sensitive", httpContext =>
+                options.AddPolicy(AuthKitRateLimitPolicies.Sensitive, httpContext =>
                     RateLimitPartition.GetSlidingWindowLimiter(
                         partitionKey: GetClientIp(httpContext),
                         factory: _ => new SlidingWindowRateLimiterOptions
@@ -190,7 +198,7 @@ namespace AuthKit.Extensions
                         }));
 
                 // سياسة معتدلة: Refresh/Logout — أقل حساسية لكن تستاهل حد أعلى شوية
-                options.AddPolicy("auth-moderate", httpContext =>
+                options.AddPolicy(AuthKitRateLimitPolicies.Moderate, httpContext =>
                     RateLimitPartition.GetFixedWindowLimiter(
                         partitionKey: GetClientIp(httpContext),
                         factory: _ => new FixedWindowRateLimiterOptions
@@ -256,8 +264,9 @@ namespace AuthKit.Extensions
         }
         public static MediatRServiceConfiguration AddAuthKitBehaviors(this MediatRServiceConfiguration cfg)
         {
+            cfg.AddOpenBehavior(typeof(AuditBehavior<,>));           // الخارجي: يسجّل المرفوض كمان
+            cfg.AddOpenBehavior(typeof(AuthorizationBehavior<,>));   // قبل التحقق: غير المصرّح له ما يشوفش رسائل التحقق
             cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
-            cfg.AddOpenBehavior(typeof(AuditBehavior<,>));
             return cfg;
         }
         public static IServiceCollection AddAuthKitAuditing<TContext>(this IServiceCollection services)
@@ -279,6 +288,12 @@ namespace AuthKit.Extensions
                 InviteUserCommandHandler<TUser, TRole, TKey, TContext>>();
             services.AddScoped<IValidator<InviteUserCommand<TUser, TKey>>, InviteUserCommandValidator<TUser, TKey>>();
 
+            return services;
+        }
+        public static IServiceCollection AddAuthKitExceptionHandling(this IServiceCollection services)
+        {
+            services.AddExceptionHandler<GlobalExceptionHandler>();
+            services.AddProblemDetails();
             return services;
         }
 

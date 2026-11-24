@@ -8,7 +8,7 @@ using System.Text;
 
 namespace AuthKit.Services.Implementations
 {
-    public class HttpAuditContext : IAuditContext
+    internal class HttpAuditContext : IAuditContext
     {
         private readonly IHttpContextAccessor _accessor;
         private string? _resolvedActor;
@@ -25,3 +25,4 @@ namespace AuthKit.Services.Implementations
         public void SetActor(string userId) => _resolvedActor = userId;
     }
 }
+

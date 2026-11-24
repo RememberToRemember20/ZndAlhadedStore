@@ -1,24 +1,26 @@
-﻿using FluentValidation;
+﻿using AuthKit.Common;
+using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 
 namespace AuthKit.Features.Auth.Register.Command
 {
-    public class RegisterCommandValidator<TUser, TKey> : AbstractValidator<RegisterCommand<TUser, TKey>>
+    internal class RegisterCommandValidator<TUser, TKey> : AbstractValidator<RegisterCommand<TUser, TKey>>
     where TUser : IdentityUser<TKey>
     where TKey : IEquatable<TKey>
     {
         public RegisterCommandValidator()
         {
-            RuleFor(x => x.User).NotNull().WithMessage("بيانات المستخدم مطلوبة.");
+            RuleFor(x => x.User).NotNull().WithErrorCode(ValidationCodes.UserRequired);
 
             RuleFor(x => x.User.Email)
-                .NotEmpty().WithMessage("البريد الإلكتروني مطلوب.")
-                .EmailAddress().WithMessage("صيغة البريد الإلكتروني غير صحيحة.")
+                .NotEmpty().WithErrorCode(ValidationCodes.EmailRequired)
+                .EmailAddress().WithErrorCode(ValidationCodes.InvalidEmail )
                 .When(x => x.User is not null);
 
             RuleFor(x => x.Password)
-                .NotEmpty().WithMessage("كلمة المرور مطلوبة.")
-                .MinimumLength(8).WithMessage("كلمة المرور يجب أن تكون 8 أحرف على الأقل.");
+                .NotEmpty().WithErrorCode(ValidationCodes.PasswordRequired)
+                .MinimumLength(8).WithErrorCode(ValidationCodes.PasswordTooShort);
         }
     }
 }
+

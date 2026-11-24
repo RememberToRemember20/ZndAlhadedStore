@@ -11,7 +11,7 @@ using System.Text;
 
 namespace AuthKit.Services.Implementations
 {
-    public class RefreshTokenCleanupService<TKey, TContext> : BackgroundService
+    internal class RefreshTokenCleanupService<TKey, TContext> : BackgroundService
      where TKey : IEquatable<TKey>
      where TContext : DbContext
     {
@@ -70,3 +70,4 @@ namespace AuthKit.Services.Implementations
         }
     }
 }
+

@@ -2,7 +2,7 @@
 
 namespace AuthKit.Authorization.PermissionFoldar.Command
 {
-    public class PermissionRequirement : IAuthorizationRequirement
+    internal class PermissionRequirement : IAuthorizationRequirement
     {
         public string Permission { get; }
 
@@ -12,3 +12,4 @@ namespace AuthKit.Authorization.PermissionFoldar.Command
         }
     }
 }
+

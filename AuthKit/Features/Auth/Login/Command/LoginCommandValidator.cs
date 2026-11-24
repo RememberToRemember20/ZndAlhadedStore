@@ -2,7 +2,7 @@
 
 namespace AuthKit.Features.Auth.Login.Command
 {
-    public class LoginCommandValidator : AbstractValidator<LoginCommand>
+    internal class LoginCommandValidator : AbstractValidator<LoginCommand>
     {
         public LoginCommandValidator()
         {
@@ -11,3 +11,4 @@ namespace AuthKit.Features.Auth.Login.Command
         }
     }
 }
+
