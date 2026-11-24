@@ -11,8 +11,10 @@ using System.Reflection;
 using System.Text;
 using ZndAlhadedStore.AppDB;
 using ZndAlhadedStore.ClaimsProvider;
+using ZndAlhadedStore.Common;
 using ZndAlhadedStore.Email;
 using ZndAlhadedStore.EmailSender;
+using ZndAlhadedStore.Errors;
 using ZndAlhadedStore.Identity;
 using ZndAlhadedStore.Implment;
 using ZndAlhadedStore.Interfaces;
@@ -77,6 +79,26 @@ namespace ZndAlhadedStore
             services.AddAuthKitEmailConfirmation<ApplicationUser, string>();
             services.AddAuthKitUserInvitation<ApplicationUser, ApplicationRole, string, AppDbContext>();
             services.AddScoped<IUserProvisioningValidator<ApplicationUser>, StaffProvisioningRules>();
+            services.AddSingleton<IAuthErrorDescriber, AppErrorDescriber>();
+            services.AddAuthKitSeeding<ApplicationUser, ApplicationRole, string, AppDbContext>(seed =>
+            {
+                seed.Permissions(Permissions.GetAll());
+                seed.RoleFactory = (name, description) => new ApplicationRole { Name = name, Description = description };
+
+                seed.AdminRole("Admin", "صلاحيات كاملة على النظام");
+                seed.Role("Manager", "مدير فريق", Permissions.Users.Invite, Permissions.Staff.View);
+                seed.Role("Supervisor", "مشرف", Permissions.Staff.View);
+                seed.Role("Employee", "موظف");
+                // seed.Role("User", "مستخدم عادي");   // لو كنت بتعتمد عليه
+
+                seed.InitialAdmin(email => new ApplicationUser
+                {
+                    UserName = email,
+                    Email = email,
+                    FullName = "System Administrator",
+                    IsActive = true
+                });
+            });
             return services;
         }
         public static IServiceCollection AddEmailSending(

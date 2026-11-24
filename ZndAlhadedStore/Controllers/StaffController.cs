@@ -1,4 +1,5 @@
-﻿using AuthKit.Authorization.PermissionFoldar.Command;
+﻿using AuthKit.Api.Controllers;
+using AuthKit.Authorization.PermissionFoldar.Command;
 using AuthKit.Features.Auth.InventUser.Command;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -19,9 +20,8 @@ namespace ZndAlhadedStore.Controllers
 
     [Route("api/[controller]")]
     [ApiController]
-    public class StaffController : ControllerBase
-    {
-        private readonly ISender _sender;
+    public class StaffController : AuthKitControllerBase
+    {  private readonly ISender _sender;
         public StaffController(ISender sender) => _sender = sender;
 
         [RequirePermission(Permissions.Users.Invite)]
@@ -57,9 +57,7 @@ namespace ZndAlhadedStore.Controllers
             var result = await _sender.Send(
                 new InviteUserCommand<ApplicationUser, string>(user, request.Roles ?? [], callerId));
 
-            return result.IsSuccess
-                ? StatusCode(StatusCodes.Status201Created, new { id = result.Value })
-                : BadRequest(result.Error);
+            return FromResult(result);
         }
 
         [RequirePermission(Permissions.Staff.View)]
@@ -72,7 +70,7 @@ namespace ZndAlhadedStore.Controllers
             var result = await _sender.Send(new GetStaffQuery(
                 callerId, User.HasClaim("permission", Permissions.Staff.AllTeams), role, page, pageSize));
 
-            return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
+            return FromResult(result);  
         }
     }
 }

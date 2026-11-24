@@ -15,7 +15,7 @@ namespace AuthKit.Api.Extensions
             var options = new AuthKitApiOptions();
             configure?.Invoke(options);
 
-            builder.Services.AddSingleton<IOptions<AuthKitApiOptions>>(Options.Create(options));
+            builder.Services.AddSingleton<IOptions<AuthKitApiOptions>>(Microsoft.Extensions.Options.Options.Create(options));
 
             builder.AddApplicationPart(typeof(AuthController).Assembly);
             builder.ConfigureApplicationPartManager(manager =>

@@ -1,3 +1,4 @@
+using AuthKit.Api.Extensions;
 using AuthKit.Extensions;
 using FluentValidation;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -8,7 +9,7 @@ using ZndAlhadedStore;
 using ZndAlhadedStore.AppDB;
 //using ZndAlhadedStore.Common.Behaviors;
 using ZndAlhadedStore.Entity.DTOs;
-using ZndAlhadedStore.Identity.Seeding;
+
 using ZndAlhadedStore.ImageResolver;
 using ZndAlhadedStore.Implment;
 using ZndAlhadedStore.Interfaces;
@@ -18,7 +19,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddAuthKitApi();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("ZndAlHaded")));
@@ -63,10 +64,7 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
-using (var scope = app.Services.CreateScope())
-{
-    await DatabaseSeeder.SeedAsync(scope.ServiceProvider);
-}
+await app.Services.SeedAuthKitAsync();
 app.UseExceptionHandler();
 
 app.UseForwardedHeaders(new ForwardedHeadersOptions

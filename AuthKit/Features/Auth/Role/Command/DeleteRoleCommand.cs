@@ -8,7 +8,7 @@ using System.Text;
 
 namespace AuthKit.Features.Auth.Role.Command
 {
-    internal record DeleteRoleCommand(string RoleId) : IRequest<Result>, IAuditableRequest, IPermissionProtectedRequest
+    public record DeleteRoleCommand(string RoleId) : IRequest<Result>, IAuditableRequest, IPermissionProtectedRequest
     {
         public string RequiredPermission => AuthKitPermissions.Roles.Manage;
         public AuditDescriptor Describe() => new(AuditEvents.RoleDelete, TargetId: RoleId);

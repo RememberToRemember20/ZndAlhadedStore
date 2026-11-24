@@ -21,16 +21,18 @@ namespace AuthKit.Services.Implementations
         private readonly IUserPermissionResolver<TKey> _permissions;
         private readonly TContext _db;
         private readonly AuthKitOptions _options;
+        private readonly IUserAccessGuard<TUser>? _accessGuard;
 
         public PrivilegeGuard(
             ICurrentUser currentUser, UserManager<TUser> userManager,
-            IUserPermissionResolver<TKey> permissions, TContext db, IOptions<AuthKitOptions> options)
+            IUserPermissionResolver<TKey> permissions, TContext db, IOptions<AuthKitOptions> options, IUserAccessGuard<TUser> accessGuard)
         {
             _currentUser = currentUser;
             _userManager = userManager;
             _permissions = permissions;
             _db = db;
             _options = options.Value;
+            _accessGuard = accessGuard;
         }
 
         public async Task<Result> RequireCallerHoldsAsync(IReadOnlyCollection<string> permissionNames, CancellationToken cancellationToken)
@@ -64,42 +66,69 @@ namespace AuthKit.Services.Implementations
                 ? Result.Failure(AuthErrorCodes.ProtectedRole)
                 : Result.Success();
 
-        public async Task<Result> EnsureNotRemovingLastHolderAsync(TKey userId, TKey roleId, CancellationToken cancellationToken)
+        private async Task<bool> HasActiveHolderAsync(
+      IQueryable<IdentityUserRole<TKey>> candidates, string permissionName, CancellationToken ct)
         {
-            if (_options.CriticalPermissions.Count == 0)
-                return Result.Success();
+            var holderIds = await candidates
+                .Join(_db.Set<RolePermission<TKey>>(), ur => ur.RoleId, rp => rp.RoleId, (ur, rp) => new { ur.UserId, rp.PermissionId })
+                .Join(_db.Set<Permission>().Where(p => p.Name == permissionName), x => x.PermissionId, p => p.Id, (x, p) => x.UserId)
+                .Distinct()
+                .ToListAsync(ct);
 
-            var rolePermissions = await _permissions.GetRolePermissionsAsync([roleId], cancellationToken);
+            if (_accessGuard is null)
+                return holderIds.Count > 0;
+
+            foreach (var holderId in holderIds)
+            {
+                var holder = await _userManager.FindByIdAsync(holderId.ToString()!);
+                if (holder is not null && _accessGuard.CanSignIn(holder))
+                    return true;
+            }
+
+            return false;
+        }
+
+        public async Task<Result> EnsureNotRemovingLastHolderAsync(TKey userId, TKey roleId, CancellationToken ct)
+        {
+            var rolePermissions = await _permissions.GetRolePermissionsAsync([roleId], ct);
 
             foreach (var permissionName in rolePermissions.Intersect(_options.CriticalPermissions))
             {
-                var anotherHolder = await _db.Set<IdentityUserRole<TKey>>()
-                    .Where(ur => !(ur.UserId.Equals(userId) && ur.RoleId.Equals(roleId)))
-                    .Join(_db.Set<RolePermission<TKey>>(), ur => ur.RoleId, rp => rp.RoleId, (ur, rp) => rp.PermissionId)
-                    .Join(_db.Set<Permission>().Where(p => p.Name == permissionName), id => id, p => p.Id, (id, p) => p.Id)
-                    .AnyAsync(cancellationToken);
+                var candidates = _db.Set<IdentityUserRole<TKey>>()
+                    .Where(ur => !(ur.UserId.Equals(userId) && ur.RoleId.Equals(roleId)));
 
-                if (!anotherHolder)
-                    return Result.Failure( AuthErrorCodes.LastAdministrator);
+                if (!await HasActiveHolderAsync(candidates, permissionName, ct))
+                    return Result.Failure(AuthErrorCodes.LastAdministrator);
             }
 
             return Result.Success();
         }
 
-        public async Task<Result> EnsureNotOrphaningPermissionAsync(TKey roleId, string permissionName, CancellationToken cancellationToken)
+        public async Task<Result> EnsureNotOrphaningPermissionAsync(TKey roleId, string permissionName, CancellationToken ct)
         {
             if (!_options.CriticalPermissions.Contains(permissionName))
                 return Result.Success();
 
-            var anotherHolder = await _db.Set<IdentityUserRole<TKey>>()
-                .Where(ur => !ur.RoleId.Equals(roleId))
-                .Join(_db.Set<RolePermission<TKey>>(), ur => ur.RoleId, rp => rp.RoleId, (ur, rp) => rp.PermissionId)
-                .Join(_db.Set<Permission>().Where(p => p.Name == permissionName), id => id, p => p.Id, (id, p) => p.Id)
-                .AnyAsync(cancellationToken);
+            var candidates = _db.Set<IdentityUserRole<TKey>>().Where(ur => !ur.RoleId.Equals(roleId));
 
-            return anotherHolder
+            return await HasActiveHolderAsync(candidates, permissionName, ct)
                 ? Result.Success()
-                : Result.Failure( AuthErrorCodes.LastAdministrator);
+                : Result.Failure(AuthErrorCodes.LastAdministrator);
+        }
+
+        public async Task<Result> EnsureNotDisablingLastHolderAsync(TKey userId, CancellationToken ct)
+        {
+            var held = await _permissions.GetUserPermissionsAsync(userId, ct);
+
+            foreach (var permissionName in held.Intersect(_options.CriticalPermissions))
+            {
+                var candidates = _db.Set<IdentityUserRole<TKey>>().Where(ur => !ur.UserId.Equals(userId));
+
+                if (!await HasActiveHolderAsync(candidates, permissionName, ct))
+                    return Result.Failure(AuthErrorCodes.LastAdministrator);
+            }
+
+            return Result.Success();
         }
     }
 }

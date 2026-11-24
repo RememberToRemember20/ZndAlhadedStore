@@ -14,11 +14,11 @@ namespace ZndAlhadedStore.Settings
         {
             var profile = context.User.StaffProfile;
             if (profile is null)
-                return "بيانات الموظف مطلوبة.";
+                return "staff_profile_required";
 
             if (profile.ReportsToId is not null &&
                 !await _db.StaffProfiles.AnyAsync(s => s.UserId == profile.ReportsToId && s.User.IsActive, ct))
-                return "المسؤول المباشر غير موجود أو غير نشط.";
+                return "reports_to_invalid";
 
             return null;
         }

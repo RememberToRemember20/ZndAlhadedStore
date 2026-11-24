@@ -16,6 +16,7 @@ using AuthKit.Features.Auth.LogoutAll.Command;
 using AuthKit.Features.Auth.Password.Command;
 using AuthKit.Features.Auth.RefreshToken.Command;
 using AuthKit.Features.User.Query;
+using AuthKit.Features.Auth.Role.Command;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

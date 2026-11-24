@@ -11,6 +11,7 @@
 	  <Description>Authentication and authorization toolkit for ASP.NET Core: Identity, JWT, RBAC and audit logging.</Description>
 	  <PackageTags>auth;jwt;identity;rbac</PackageTags>
 	  <PackageReadmeFile>README.md</PackageReadmeFile>
+	  <UserSecretsId>c14c8c2e-f1e5-47a9-ab58-ae50646b334b</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -32,6 +33,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.14" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.14" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.1" />
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
   </ItemGroup>
 

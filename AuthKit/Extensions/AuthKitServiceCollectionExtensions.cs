@@ -41,6 +41,7 @@ using AuthKit.Features.Auth.Role.Handler;
 using AuthKit.Features.User.Handler;
 using AuthKit.Features.User.Query;
 using AuthKit.Models;
+using AuthKit.Seeder;
 using AuthKit.Services.Implementations;
 using AuthKit.Services.Interfaces;
 using AuthKit.Settings;
@@ -295,6 +296,35 @@ namespace AuthKit.Extensions
             services.AddExceptionHandler<GlobalExceptionHandler>();
             services.AddProblemDetails();
             return services;
+        }
+        public static IServiceCollection AddAuthKitSeeding<TUser, TRole, TKey, TContext>(
+    this IServiceCollection services, Action<AuthKitSeedBuilder<TUser, TRole, TKey>> configure)
+    where TUser : IdentityUser<TKey>
+    where TRole : IdentityRole<TKey>, new()
+    where TKey : IEquatable<TKey>
+    where TContext : DbContext
+        {
+            var builder = new AuthKitSeedBuilder<TUser, TRole, TKey>();
+            configure(builder);
+
+            services.AddSingleton(builder);
+            services.AddScoped<IAuthKitSeeder, AuthKitSeeder<TUser, TRole, TKey, TContext>>();
+
+            // دور الأدمن بيتحمى تلقائياً بدون ما تكرر اسمه في الإعدادات
+            if (builder.AdminRoleName is { } adminRole)
+                services.PostConfigure<AuthKitOptions>(o =>
+                {
+                    if (!o.ProtectedRoleNames.Contains(adminRole, StringComparer.OrdinalIgnoreCase))
+                        o.ProtectedRoleNames.Add(adminRole);
+                });
+
+            return services;
+        }
+
+        public static async Task SeedAuthKitAsync(this IServiceProvider services, CancellationToken cancellationToken = default)
+        {
+            using var scope = services.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<IAuthKitSeeder>().SeedAsync(cancellationToken);
         }
 
     }

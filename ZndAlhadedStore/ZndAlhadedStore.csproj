@@ -27,6 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\AuthKit.Api\AuthKit.Api.csproj" />
     <ProjectReference Include="..\AuthKit\AuthKit.csproj" />
     <ProjectReference Include="..\Shared\Shared.csproj" />
   </ItemGroup>

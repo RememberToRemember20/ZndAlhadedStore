@@ -9,7 +9,7 @@ using System.Text;
 
 namespace AuthKit.Features.Auth.Role.Command
 {
-    internal record CreateRoleCommand(string Name) : IRequest<Result<string>>, IAuditableRequest, IPermissionProtectedRequest
+    public record CreateRoleCommand(string Name) : IRequest<Result<string>>, IAuditableRequest, IPermissionProtectedRequest
     {
         public string RequiredPermission => AuthKitPermissions.Roles.Manage;
         public AuditDescriptor Describe() => new(AuditEvents.RoleCreate, Details: $"name={Name}");

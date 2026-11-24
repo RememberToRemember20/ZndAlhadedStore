@@ -14,12 +14,14 @@ namespace ZndAlhadedStore.Feautres.UserCommandHandler.Handler
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IAuthTokenIssuer<ApplicationUser, string> _tokenIssuer;
+        private readonly IPrivilegeGuard<string> _guard;
 
         public SetUserActiveCommandHandler(
-            UserManager<ApplicationUser> userManager, IAuthTokenIssuer<ApplicationUser, string> tokenIssuer)
+            UserManager<ApplicationUser> userManager, IAuthTokenIssuer<ApplicationUser, string> tokenIssuer, IPrivilegeGuard<string> guard      )
         {
             _userManager = userManager;
             _tokenIssuer = tokenIssuer;
+            _guard = guard;
         }
 
         public async Task<Result> Handle(SetUserActiveCommand request, CancellationToken cancellationToken)
@@ -31,7 +33,11 @@ namespace ZndAlhadedStore.Feautres.UserCommandHandler.Handler
             if (user is null) return Result.Failure("المستخدم غير موجود.");
 
             if (user.IsActive == request.IsActive) return Result.Success();
-
+            if (!request.IsActive)
+            {
+                var safe = await _guard.EnsureNotDisablingLastHolderAsync(user.Id, cancellationToken);
+                if (!safe.IsSuccess) return safe;
+            }
             user.IsActive = request.IsActive;
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
