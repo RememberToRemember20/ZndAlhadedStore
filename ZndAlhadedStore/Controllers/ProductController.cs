@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using AuthKit.Authorization.PermissionFoldar.Command;
+using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +8,7 @@ using Shared.DTOs;
 using ZndAlhadedStore.Feautres.ProductCommandHandler.Command;
 using ZndAlhadedStore.Feautres.ProductCommandHandler.Query;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+using static ZndAlhadedStore.Common.Permissions;
 
 namespace ZndAlhadedStore.Controllers
 {
@@ -31,6 +33,7 @@ namespace ZndAlhadedStore.Controllers
             return Ok(newProductId);
         }
         [HttpGet("GetAllProducts")]
+        [RequirePermission(ProductsEmployee.ViewAll)]
         public async Task<IActionResult> GetAllProducts() 
         {
             var query=new GetAllProductsQuery();

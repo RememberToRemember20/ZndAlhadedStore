@@ -112,7 +112,8 @@ namespace AuthKit.Features.Auth.InventUser.Handler
             try
             {
                 var token = await _userManager.GeneratePasswordResetTokenAsync(request.User);
-                await _emailSender.SendInvitationAsync(request.User, UrlTokenEncoder.Encode(token), cancellationToken);
+                await _emailSender.
+                    SendInvitationAsync(request.User, UrlTokenEncoder.Encode(token), cancellationToken);
             }
             catch (Exception ex)
             {

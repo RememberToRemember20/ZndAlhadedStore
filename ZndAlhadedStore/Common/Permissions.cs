@@ -20,7 +20,18 @@ namespace ZndAlhadedStore.Common
         }
 
         public static class Roles { public const string Manage = AuthKitPermissions.Roles.Manage; }
-       
+       public static class ProductsManagement
+        {
+            public const string Create = "Products.Create";
+            public const string ViewAll = "Products.ViewAll";
+            public const string Update = "Products.Update";
+            public const string Delete = "Products.Delete";
+        }
+        public static class ProductsEmployee
+        {
+            public const string ViewAll = "Products.ViewAll";
+
+        }
         public static class AuditLogs { public const string View = AuthKitPermissions.AuditLogs.View; }
         public static IEnumerable<string> GetAll()
         {
