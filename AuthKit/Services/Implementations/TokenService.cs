@@ -80,7 +80,10 @@ namespace AuthKit.Services.Implementations
                 ValidAudience = _jwtSettings.Audience,
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret)),
-                ValidateLifetime = false
+                ValidateLifetime = false,
+                ValidAlgorithms = new[] { SecurityAlgorithms.HmacSha256 },
+                RequireSignedTokens = true,
+                RequireExpirationTime = true,
             };
 
             var tokenHandler = new JwtSecurityTokenHandler();

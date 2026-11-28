@@ -1,0 +1,107 @@
+﻿@inherits AkComponentBase
+@using System.Web
+@inject IAuthKitApi Api
+@inject AuthKitSession Session
+@inject NavigationManager Nav
+@inject AuthKitUiOptions Options
+
+<AkShell Title="@L["login.title"]" Subtitle="@L["login.subtitle"]" Embedded="Embedded">
+    <form class="ak-form" @onsubmit="SubmitAsync" @onsubmit:preventDefault novalidate>
+        <AkErrorAlert Error="_error" />
+
+        @if (_resent)
+        {
+            <div class="ak-alert ak-alert--success" role="status">@L["login.confirmation_sent"]</div>
+        }
+
+        <AkField Id="ak-login-email" Label="@L["common.email"]" Type="AkFieldType.Email" Required="true"
+                 Autocomplete="username" @bind-Value="_email" Error="@_emailError" />
+
+        <AkField Id="ak-login-password" Label="@L["common.password"]" Type="AkFieldType.Password" Required="true"
+                 Autocomplete="current-password" @bind-Value="_password" Error="@_passwordError" />
+
+        <button type="submit" class="ak-btn ak-btn--primary" disabled="@_busy">
+            @if (_busy)
+            {
+                <span class="ak-spinner" aria-hidden="true"></span>
+            }
+            @L["login.submit"]
+        </button>
+
+        <div class="ak-links">
+            <a class="ak-link" href="@Options.Routes.ForgotPassword">@L["login.forgot"]</a>
+            @if (ShowRegister)
+            {
+                <a class="ak-link" href="@Options.Routes.Register">@L["login.register"]</a>
+            }
+        </div>
+
+        @if (_error?.Code == "email_not_confirmed")
+        {
+            <button type="button" class="ak-link" @onclick="ResendAsync">@L["login.resend_confirmation"]</button>
+        }
+    </form>
+</AkShell>
+
+@code {
+    [Parameter] public string? ReturnUrl { get; set; }
+    [Parameter] public bool ShowRegister { get; set; } = true;
+    [Parameter] public bool Embedded { get; set; }
+    [Parameter] public EventCallback OnSignedIn { get; set; }
+
+    private string _email = "";
+    private string _password = "";
+    private string? _emailError;
+    private string? _passwordError;
+    private AuthKit.Blazor.Http.ApiError? _error;
+    private bool _busy;
+    private bool _resent;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        ReturnUrl ??= HttpUtility.ParseQueryString(new Uri(Nav.Uri).Query)["returnUrl"];
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_busy) return;
+
+        _error = null;
+        _resent = false;
+        _emailError = string.IsNullOrWhiteSpace(_email) ? L["common.required"]
+            : !_email.Contains('@') ? L["common.invalid_email"] : null;
+        _passwordError = string.IsNullOrEmpty(_password) ? L["common.required"] : null;
+
+        if (_emailError is not null || _passwordError is not null) return;
+
+        _busy = true;
+        try
+        {
+            var result = await Api.LoginAsync(_email.Trim(), _password);
+
+            if (!result.IsSuccess)
+            {
+                _error = result.Error;
+                _password = "";
+                return;
+            }
+
+            await Session.SignInAsync(result.Value!);
+
+            if (OnSignedIn.HasDelegate)
+                await OnSignedIn.InvokeAsync();
+            else
+                Nav.NavigateTo(AkUrl.IsLocal(ReturnUrl) ? ReturnUrl! : Options.Routes.Home);
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task ResendAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_email)) { _emailError = L["common.required"]; return; }
+
+        await Api.ResendConfirmationAsync(_email.Trim());
+        _resent = true;
+    }
+}

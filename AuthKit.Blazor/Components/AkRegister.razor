@@ -1,0 +1,150 @@
+﻿@inherits AkComponentBase
+@inject IAuthKitApi Api
+@inject AuthKitSession Session
+@inject NavigationManager Nav
+@inject AuthKitUiOptions Options
+
+<AkShell Title="@(_checkEmail ? L["register.check_email_title"] : L["register.title"])"
+         Subtitle="@(_checkEmail ? null : L["register.subtitle"])" Embedded="Embedded">
+    @if (_checkEmail)
+    {
+        <div class="ak-alert ak-alert--success" role="status">@L["register.check_email_body"]</div>
+        <div class="ak-footer"><a class="ak-link" href="@Options.Routes.Login">@L["common.back_to_login"]</a></div>
+    }
+    else
+    {
+        <form class="ak-form" @onsubmit="SubmitAsync" @onsubmit:preventDefault novalidate>
+            <AkErrorAlert Error="_formError" />
+
+            @foreach (var spec in Options.Register.Fields)
+            {
+                var key = spec.Key;
+                var id = $"ak-reg-{key}";
+
+                <AkField Id="@id" Label="@LabelOf(spec)" Type="spec.Type" Required="spec.Required"
+                         Autocomplete="@spec.Autocomplete" MaxLength="spec.MaxLength"
+                         Value="@Get(key)" ValueChanged="@((string v) => Set(key, v))" Error="@ErrorOf(key)" />
+            }
+
+            @if (HasPassword && Options.Register.ConfirmPassword)
+            {
+                <AkField Id="ak-reg-confirm" Label="@L["common.confirm_password"]" Type="AkFieldType.Password"
+                         Required="true" Autocomplete="new-password" @bind-Value="_confirm" Error="@_confirmError" />
+            }
+
+            <AkSubmit Busy="_busy" Text="@L["register.submit"]" />
+
+            <div class="ak-footer"><a class="ak-link" href="@Options.Routes.Login">@L["register.have_account"]</a></div>
+        </form>
+    }
+</AkShell>
+
+@code {
+    [Parameter] public bool Embedded { get; set; }
+    [Parameter] public EventCallback OnRegistered { get; set; }
+
+    private readonly Dictionary<string, string> _values = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string?> _errors = new(StringComparer.OrdinalIgnoreCase);
+    private string _confirm = "";
+    private string? _confirmError;
+    private ApiError? _formError;
+    private bool _busy;
+    private bool _checkEmail;
+
+    private bool HasPassword => Options.Register.Fields.Any(f =>
+        f.Key.Equals(Options.Register.PasswordKey, StringComparison.OrdinalIgnoreCase));
+
+    private string Get(string key) => _values.TryGetValue(key, out var v) ? v : "";
+    private void Set(string key, string value) => _values[key] = value;
+    private string? ErrorOf(string key) => _errors.TryGetValue(key, out var e) ? e : null;
+    private string LabelOf(AkFieldSpec spec) => spec.Label ?? L[spec.LabelKey ?? $"field.{spec.Key}"];
+
+    private bool Validate()
+    {
+        _errors.Clear();
+        _confirmError = null;
+
+        foreach (var spec in Options.Register.Fields)
+        {
+            var value = Get(spec.Key);
+            string? error;
+
+            if (spec.Key.Equals(Options.Register.PasswordKey, StringComparison.OrdinalIgnoreCase))
+                error = AkValidation.NewPassword(L, value, Options.Register.PasswordMinLength);
+            else if (spec.Type == AkFieldType.Email)
+                error = spec.Required || value.Length > 0 ? AkValidation.Email(L, value) : null;
+            else
+                error = spec.Required ? AkValidation.Required(L, value) : null;
+
+            if (error is null && spec.MinLength is { } min && value.Length > 0 && value.Length < min)
+                error = L.Format("common.too_short", min);
+
+            if (error is not null) _errors[spec.Key] = error;
+        }
+
+        if (HasPassword && Options.Register.ConfirmPassword)
+            _confirmError = AkValidation.Confirm(L, Get(Options.Register.PasswordKey), _confirm);
+
+        return _errors.Count == 0 && _confirmError is null;
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_busy) return;
+
+        _formError = null;
+        if (!Validate()) return;
+
+        _busy = true;
+        try
+        {
+            var payload = Options.Register.Fields.ToDictionary(
+                f => f.Key, f => f.Type == AkFieldType.Password ? Get(f.Key) : Get(f.Key).Trim());
+
+            var result = await Api.RegisterAsync(payload);
+            if (!result.IsSuccess)
+            {
+                ApplyServerErrors(result.Error!);
+                return;
+            }
+
+            var outcome = result.Value!;
+            if (outcome.RequiresEmailConfirmation)
+            {
+                _checkEmail = true;
+                return;
+            }
+
+            if (outcome.Tokens is not null)
+                await Session.SignInAsync(outcome.Tokens);
+
+            if (OnRegistered.HasDelegate)
+                await OnRegistered.InvokeAsync();
+            else
+                Nav.NavigateTo(outcome.Tokens is null ? Options.Routes.Login : Options.Routes.Home);
+        }
+        finally { _busy = false; }
+    }
+
+    private void ApplyServerErrors(ApiError error)
+    {
+        if (error.Code == "email_taken" && Options.Register.Fields.FirstOrDefault(f => f.Type == AkFieldType.Email) is { } email)
+        {
+            _errors[email.Key] = L.Error(error);
+            return;
+        }
+
+        var fieldLevel = false;
+        foreach (var spec in Options.Register.Fields)
+        {
+            if (error.FieldCode(spec.Key) is { } code)
+            {
+                _errors[spec.Key] = L.Error(code);
+                fieldLevel = true;
+            }
+        }
+
+        // أخطاء Identity (قواعد كلمة المرور...) بتيجي كأكواد من غير اسم حقل: بنعرضها كقائمة
+        _formError = fieldLevel && error.DetailCodes.Count == 0 ? null : error;
+    }
+}

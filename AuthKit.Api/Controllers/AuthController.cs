@@ -38,23 +38,54 @@ namespace AuthKit.Api.Controllers
         [HttpPost("login")]
         [EnableRateLimiting(AuthKitRateLimitPolicies.Sensitive)]
         public async Task<IActionResult> Login(LoginCommand command) =>
-            FromResult(await Sender.Send(command));
-
+       Untrusted() ?? FromTokens(await Sender.Send(command));
         [HttpPost("refresh-token")]
         [EnableRateLimiting(AuthKitRateLimitPolicies.Moderate)]
-        public async Task<IActionResult> Refresh(RefreshTokenCommand command) =>
-            FromResult(await Sender.Send(command));
+        public async Task<IActionResult> Refresh(RefreshRequest request)
+        {
+            if (Untrusted() is { } rejected) return rejected;
 
+            var useCookie = Cookies.CookieRequested(HttpContext);
+            var token = useCookie ? Cookies.Read(HttpContext) : request.RefreshToken;
+
+            if (useCookie && token is null)
+                return Failure(Result.Failure(AuthErrorCodes.InvalidToken));
+
+            var result = await Sender.Send(new RefreshTokenCommand(request.AccessToken, token ?? string.Empty));
+
+            if (useCookie && !result.IsSuccess && IsSessionEnding(result.ErrorCode))
+                Cookies.Clear(HttpContext);   // كوكي ميت: امسحه عشان ما يكررش الفشل
+
+            return FromTokens(result);
+        }
         [Authorize, HttpPost("logout")]
         [EnableRateLimiting(AuthKitRateLimitPolicies.Moderate)]
-        public async Task<IActionResult> Logout(LogoutRequest request) =>
-            CallerId is { } id ? FromResult(await Sender.Send(new LogoutCommand(id, request.RefreshToken))) : Unauthorized();
+        public async Task<IActionResult> Logout(LogoutRequest request)
+        {
+            if (Untrusted() is { } rejected) return rejected;
+            if (CallerId is not { } id) return Unauthorized();
+
+            var useCookie = Cookies.CookieRequested(HttpContext);
+            var token = useCookie ? Cookies.Read(HttpContext) : request.RefreshToken;
+
+            var result = string.IsNullOrEmpty(token) ? Result.Success() : await Sender.Send(new LogoutCommand(id, token));
+            if (useCookie) Cookies.Clear(HttpContext);
+
+            return FromResult(result);
+        }
 
         [Authorize, HttpPost("logout-all")]
         [EnableRateLimiting(AuthKitRateLimitPolicies.Moderate)]
-        public async Task<IActionResult> LogoutAll() =>
-            CallerId is { } id ? FromResult(await Sender.Send(new LogoutAllCommand(id))) : Unauthorized();
+        public async Task<IActionResult> LogoutAll()
+        {
+            if (Untrusted() is { } rejected) return rejected;
+            if (CallerId is not { } id) return Unauthorized();
 
+            var result = await Sender.Send(new LogoutAllCommand(id));
+            if (Cookies.CookieRequested(HttpContext)) Cookies.Clear(HttpContext);
+
+            return FromResult(result);
+        }
         [HttpPost("forgot-password")]
         [EnableRateLimiting(AuthKitRateLimitPolicies.Sensitive)]
         public async Task<IActionResult> ForgotPassword(ForgotPasswordCommand command) =>
@@ -64,14 +95,19 @@ namespace AuthKit.Api.Controllers
         [EnableRateLimiting(AuthKitRateLimitPolicies.Sensitive)]
         public async Task<IActionResult> ResetPassword(ResetPasswordCommand command) =>
             FromResult(await Sender.Send(command));
-
         [Authorize, HttpPost("change-password")]
         [EnableRateLimiting(AuthKitRateLimitPolicies.Sensitive)]
-        public async Task<IActionResult> ChangePassword(ChangePasswordRequest request) =>
-            CallerId is { } id
-                ? FromResult(await Sender.Send(new ChangePasswordCommand(id, request.CurrentPassword, request.NewPassword)))
-                : Unauthorized();
+        public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
+        {
+            if (Untrusted() is { } rejected) return rejected;
+            if (CallerId is not { } id) return Unauthorized();
 
+            return FromTokens(await Sender.Send(new ChangePasswordCommand(id, request.CurrentPassword, request.NewPassword)));
+        }
+
+        private static bool IsSessionEnding(string? code) => code is
+            AuthErrorCodes.InvalidToken or AuthErrorCodes.TokenReuseDetected or
+            AuthErrorCodes.SessionExpired or AuthErrorCodes.AccountUnavailable;
         [HttpPost("confirm-email")]
         [EnableRateLimiting(AuthKitRateLimitPolicies.Sensitive)]
         public async Task<IActionResult> ConfirmEmail(ConfirmEmailCommand command) =>

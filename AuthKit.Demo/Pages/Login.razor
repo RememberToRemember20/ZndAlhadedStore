@@ -1,0 +1,18 @@
+﻿@page "/login"
+@inject AkThemeState Theme
+
+<AkLogin />
+
+<p style="text-align:center">
+    <button @onclick="Teal">أخضر مزرق</button>
+    <button @onclick="Red">أحمر</button>
+    <button @onclick="Dark">داكن</button>
+    <button @onclick="Light">فاتح</button>
+</p>
+
+@code {
+    private void Teal() => Theme.Update(t => t.Primary = "#0f766e");
+    private void Red() => Theme.Update(t => t.Primary = "#b91c1c");
+    private void Dark() => Theme.Update(t => t.ColorMode = AkColorMode.Dark);
+    private void Light() => Theme.Update(t => t.ColorMode = AkColorMode.Light);
+}

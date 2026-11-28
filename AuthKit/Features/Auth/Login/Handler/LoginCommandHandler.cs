@@ -21,6 +21,8 @@ namespace AuthKit.Features.Auth.Login.Handler
         private readonly IUserAccessGuard<TUser>? _accessGuard;
         private readonly AuthKitOptions _options;
         private readonly IAuditContext _audit;
+        private readonly IPasswordHasher<TUser> _passwordHasher;
+        private static string? _dummyHash;
 
         public LoginCommandHandler(
             UserManager<TUser> userManager,
@@ -28,6 +30,7 @@ namespace AuthKit.Features.Auth.Login.Handler
             IAuthTokenIssuer<TUser, TKey> tokenIssuer,
             IOptions<AuthKitOptions> options,
             IAuditContext audit,
+            IPasswordHasher<TUser> passwordHasher,
             IUserAccessGuard<TUser>? accessGuard = null
                 )
         {
@@ -37,18 +40,26 @@ namespace AuthKit.Features.Auth.Login.Handler
             _audit = audit;
             _accessGuard = accessGuard;
             _options = options.Value;
-           
+            _passwordHasher = passwordHasher;
+
+        }
+        private void BurnTime(string password)
+        {
+            _dummyHash ??= _passwordHasher.HashPassword(default!, "AuthKit-dummy-1!");
+            _passwordHasher.VerifyHashedPassword(default!, _dummyHash, password);
         }
 
         public async Task<Result<AuthResult>> Handle(LoginCommand request, CancellationToken cancellationToken)
         {
             var user = await _userManager.FindByEmailAsync(request.Email);
-            if (user is null)
+            if (user is null) 
+            { BurnTime(request.Password);
                 return Result<AuthResult>.Failure(AuthErrorCodes.InvalidCredentials);
-
+            }
             if (_accessGuard is not null && !_accessGuard.CanSignIn(user))
+            { BurnTime(request.Password);
                 return Result<AuthResult>.Failure(AuthErrorCodes.InvalidCredentials);
-
+            }
             var signInResult = await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
 
             if (signInResult.IsLockedOut)

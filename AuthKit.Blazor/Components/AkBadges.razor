@@ -1,0 +1,19 @@
+﻿@inherits AkComponentBase
+
+<div class="ak-badges">
+    @if (Items.Count == 0)
+    {
+        <span class="ak-hint">@L["profile.none"]</span>
+    }
+    else
+    {
+        @foreach (var item in Items)
+        {
+            <span class="ak-badge">@item</span>
+        }
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<string> Items { get; set; } = Array.Empty<string>();
+}

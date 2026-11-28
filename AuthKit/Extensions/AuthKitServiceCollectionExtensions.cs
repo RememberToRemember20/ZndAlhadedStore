@@ -92,6 +92,9 @@ namespace AuthKit.Extensions
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
                     ValidateLifetime = true,
+                    ValidAlgorithms = new[] { SecurityAlgorithms.HmacSha256 },
+                    RequireSignedTokens = true,
+                    RequireExpirationTime = true,
                     ClockSkew = TimeSpan.Zero
                 };
             });
@@ -222,7 +225,7 @@ namespace AuthKit.Extensions
 
             services.AddScoped<IRequestHandler<ResetPasswordCommand, Result>, ResetPasswordCommandHandler<TUser, TKey, TContext>>();
             services.AddScoped<IValidator<ResetPasswordCommand>, ResetPasswordCommandValidator>();
-
+            services.AddMemoryCache();
             return services;
         }
         public static IServiceCollection AddAuthKitEmailConfirmation<TUser, TKey>(
@@ -241,24 +244,35 @@ namespace AuthKit.Extensions
 
             services.AddScoped<IRequestHandler<ResendConfirmationEmailCommand, Result>, ResendConfirmationEmailCommandHandler<TUser, TKey>>();
             services.AddScoped<IValidator<ResendConfirmationEmailCommand>, ResendConfirmationEmailCommandValidator>();
-
+            services.AddMemoryCache();
             return services;
         }
 
         private static string GetClientIp(HttpContext httpContext) =>
             httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         public static IServiceCollection AddConfiguredCors(
-    this IServiceCollection services, IConfiguration configuration, string sectionName = "Cors")
+     this IServiceCollection services, IConfiguration configuration, string sectionName = "Cors", bool allowCredentials = false)
         {
             var origins = configuration.GetSection($"{sectionName}:AllowedOrigins").Get<string[]>() ?? [];
 
+            foreach (var origin in origins)
+            {
+                var valid = Uri.TryCreate(origin, UriKind.Absolute, out var uri)
+                    && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
+                    && uri.GetLeftPart(UriPartial.Authority) == origin.TrimEnd('/');
+
+                if (!valid)
+                    throw new InvalidOperationException($"Invalid CORS origin '{origin}'. Use scheme://host[:port] only (no '*', no paths).");
+            }
+
+            services.Configure<AuthKitCorsOptions>(o => o.AllowedOrigins = origins);
+
             services.AddCors(options => options.AddDefaultPolicy(policy =>
             {
-                if (origins.Length > 0)
-                    policy.WithOrigins(origins)
-                          .AllowAnyHeader()
-                          .AllowAnyMethod()
-                          .WithExposedHeaders("Retry-After");
+                if (origins.Length == 0) return;
+
+                policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod().WithExposedHeaders("Retry-After");
+                if (allowCredentials) policy.AllowCredentials();
             }));
 
             return services;

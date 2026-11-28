@@ -1,0 +1,72 @@
+﻿@inherits AkComponentBase
+@inject AkThemeState Theme
+
+<div class="ak-root" dir="@(L.IsRtl ? "rtl" : "ltr")" lang="@L.Language"
+     data-ak-mode="@Theme.Current.ModeAttribute"
+     data-ak-motion="@Theme.Current.MotionAttribute"
+     data-ak-enter="@Theme.Current.EnterAttribute"
+     style="@Theme.Current.ToStyle()">
+    <div class="ak-shell @(Embedded ? "ak-shell--embedded" : "")">
+        <div class="ak-card">
+            <div class="ak-brand">
+                @if (Theme.Current.Logo is not null)
+                {
+                    @Theme.Current.Logo
+                }
+                else if (AkUrlGuard.IsSafeImageUrl(Theme.Current.LogoUrl))
+                @if (!string.IsNullOrWhiteSpace(Theme.Current.AppName))
+                {
+                    <span class="ak-appname">@Theme.Current.AppName</span>
+                }
+            </div>
+
+            @if (!string.IsNullOrEmpty(Title))
+            {
+                <h1 class="ak-title">@Title</h1>
+            }
+            @if (!string.IsNullOrEmpty(Subtitle))
+            {
+                <p class="ak-subtitle">@Subtitle</p>
+            }
+
+            @ChildContent
+
+            @if (L.Languages.Count > 1)
+            {
+                <div class="ak-footer">
+                    <div class="ak-lang" role="group" aria-label="@L["common.language"]">
+                        @foreach (var language in L.Languages)
+                        {
+                            <button type="button" class="ak-lang-btn"
+                                    aria-pressed="@(language == L.Language ? "true" : "false")"
+                                    @onclick="() => L.SetLanguage(language)">
+                                @language.ToUpperInvariant()
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public bool Embedded { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        Theme.Changed += OnThemeChanged;
+    }
+
+    private void OnThemeChanged() => _ = InvokeAsync(StateHasChanged);
+
+    public override void Dispose()
+    {
+        base.Dispose();
+        Theme.Changed -= OnThemeChanged;
+    }
+}

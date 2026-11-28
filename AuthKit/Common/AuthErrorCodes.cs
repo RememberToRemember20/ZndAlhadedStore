@@ -30,6 +30,7 @@ namespace AuthKit.Common
         public const string PermissionNotFound = "permission_not_found";
         public const string PermissionAlreadyAssigned = "permission_already_assigned";
         public const string IdentityError = "identity_error";
+        public const string CsrfRejected = "csrf_rejected";
         
     }
     public static class ValidationCodes

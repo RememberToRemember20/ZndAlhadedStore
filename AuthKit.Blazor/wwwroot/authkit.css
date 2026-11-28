@@ -1,0 +1,440 @@
+.ak-root {
+    --ak-color-primary: #2563eb;
+    --ak-color-primary-contrast: #ffffff;
+    --ak-color-bg: #f4f6fb;
+    --ak-color-surface: #ffffff;
+    --ak-color-text: #111827;
+    --ak-color-muted: #6b7280;
+    --ak-color-border: #d9dee8;
+    --ak-color-danger: #dc2626;
+    --ak-color-success: #16a34a;
+    --ak-radius: 14px;
+    --ak-radius-sm: calc(var(--ak-radius) * .7);
+    --ak-shadow: 0 10px 30px rgba(17, 24, 39, .08);
+    --ak-font: system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
+    --ak-logo-height: 44px;
+    --ak-ms: 200ms;
+    --ak-motion-on: 1;
+    --ak-dur: calc(var(--ak-ms) * var(--ak-motion-on));
+    --ak-ease: cubic-bezier(.2, .8, .2, 1);
+    color: var(--ak-color-text);
+    font-family: var(--ak-font);
+    line-height: 1.5;
+}
+
+    /* الوضع الداكن */
+    .ak-root[data-ak-mode="dark"] {
+        --ak-color-bg: #0f1420;
+        --ak-color-surface: #171d2b;
+        --ak-color-text: #e8ecf5;
+        --ak-color-muted: #9aa4b8;
+        --ak-color-border: #2a3347;
+        --ak-shadow: 0 10px 30px rgba(0, 0, 0, .4);
+    }
+
+@media (prefers-color-scheme: dark) {
+    .ak-root[data-ak-mode="auto"] {
+        --ak-color-bg: #0f1420;
+        --ak-color-surface: #171d2b;
+        --ak-color-text: #e8ecf5;
+        --ak-color-muted: #9aa4b8;
+        --ak-color-border: #2a3347;
+        --ak-shadow: 0 10px 30px rgba(0, 0, 0, .4);
+    }
+}
+
+/* الحركة: بدون، أو تفضيل المستخدم بتقليل الحركة */
+.ak-root[data-ak-motion="none"] {
+    --ak-motion-on: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ak-root {
+        --ak-motion-on: 0;
+    }
+}
+
+/* التخطيط */
+.ak-shell {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: var(--ak-color-bg);
+    box-sizing: border-box;
+}
+
+.ak-shell--embedded {
+    min-height: 0;
+    padding: 0;
+    background: transparent;
+}
+
+.ak-card {
+    width: min(100%, 440px);
+    box-sizing: border-box;
+    background: var(--ak-color-surface);
+    border: 1px solid var(--ak-color-border);
+    border-radius: var(--ak-radius);
+    box-shadow: var(--ak-shadow);
+    padding: 32px 28px;
+}
+
+.ak-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-block-end: 20px;
+}
+
+.ak-logo {
+    height: var(--ak-logo-height);
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.ak-appname {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.ak-title {
+    font-size: 1.4rem;
+    margin: 0 0 4px;
+    text-align: center;
+}
+
+.ak-subtitle {
+    color: var(--ak-color-muted);
+    margin: 0 0 20px;
+    text-align: center;
+    font-size: .95rem;
+}
+
+.ak-form {
+    display: grid;
+    gap: 14px;
+}
+
+.ak-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px 16px;
+    font-size: .9rem;
+}
+
+.ak-footer {
+    display: flex;
+    justify-content: center;
+    margin-block-start: 20px;
+}
+
+/* الحقول */
+.ak-field {
+    display: grid;
+    gap: 6px;
+}
+
+.ak-label {
+    font-size: .9rem;
+    font-weight: 600;
+}
+
+.ak-req {
+    color: var(--ak-color-danger);
+    margin-inline-start: 4px;
+}
+
+.ak-input-wrap {
+    position: relative;
+    display: flex;
+}
+
+.ak-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 11px 14px;
+    font: inherit;
+    color: inherit;
+    background: transparent;
+    border: 1px solid var(--ak-color-border);
+    border-radius: var(--ak-radius-sm);
+    transition: border-color var(--ak-dur) var(--ak-ease), box-shadow var(--ak-dur) var(--ak-ease);
+}
+
+.ak-input--has-reveal {
+    padding-inline-end: 64px;
+}
+
+.ak-input:focus {
+    outline: none;
+    border-color: var(--ak-color-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ak-color-primary) 25%, transparent);
+}
+
+.ak-field--error .ak-input {
+    border-color: var(--ak-color-danger);
+}
+
+.ak-error-text {
+    color: var(--ak-color-danger);
+    font-size: .85rem;
+}
+
+.ak-hint {
+    color: var(--ak-color-muted);
+    font-size: .85rem;
+}
+
+.ak-reveal {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 6px;
+    background: none;
+    border: 0;
+    padding: 0 8px;
+    font: inherit;
+    font-size: .85rem;
+    color: var(--ak-color-muted);
+    cursor: pointer;
+}
+
+/* الأزرار والروابط */
+.ak-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 11px 16px;
+    font: inherit;
+    font-weight: 600;
+    border: 1px solid transparent;
+    border-radius: var(--ak-radius-sm);
+    cursor: pointer;
+    transition: transform var(--ak-dur) var(--ak-ease), filter var(--ak-dur) var(--ak-ease), box-shadow var(--ak-dur) var(--ak-ease), opacity var(--ak-dur);
+}
+
+.ak-btn--primary {
+    background: var(--ak-color-primary);
+    color: var(--ak-color-primary-contrast);
+}
+
+    .ak-btn--primary:hover:not(:disabled) {
+        filter: brightness(1.08);
+    }
+
+.ak-btn--ghost {
+    background: transparent;
+    color: inherit;
+    border-color: var(--ak-color-border);
+}
+
+.ak-btn--danger {
+    background: var(--ak-color-danger);
+    color: #fff;
+}
+
+.ak-btn:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.ak-btn:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+.ak-link {
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    color: var(--ak-color-primary);
+    cursor: pointer;
+    text-decoration: none;
+}
+
+    .ak-link:hover {
+        text-decoration: underline;
+    }
+
+    .ak-btn:focus-visible, .ak-link:focus-visible, .ak-reveal:focus-visible, .ak-lang-btn:focus-visible {
+        outline: 2px solid var(--ak-color-primary);
+        outline-offset: 2px;
+    }
+
+/* التنبيهات والشارات */
+.ak-alert {
+    padding: 10px 14px;
+    border-radius: var(--ak-radius-sm);
+    border: 1px solid;
+    font-size: .92rem;
+    animation: ak-fade var(--ak-dur) var(--ak-ease) both;
+}
+
+.ak-alert--error {
+    color: var(--ak-color-danger);
+    border-color: color-mix(in srgb, var(--ak-color-danger) 40%, transparent);
+    background: color-mix(in srgb, var(--ak-color-danger) 8%, transparent);
+}
+
+.ak-alert--success {
+    color: var(--ak-color-success);
+    border-color: color-mix(in srgb, var(--ak-color-success) 40%, transparent);
+    background: color-mix(in srgb, var(--ak-color-success) 8%, transparent);
+}
+
+.ak-alert--info {
+    color: var(--ak-color-muted);
+    border-color: var(--ak-color-border);
+}
+
+.ak-error-list {
+    margin: 6px 0 0;
+    padding-inline-start: 18px;
+}
+
+.ak-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.ak-badge {
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ak-color-primary) 12%, transparent);
+    color: var(--ak-color-primary);
+    font-size: .8rem;
+}
+
+.ak-kv {
+    display: grid;
+    gap: 4px;
+}
+
+    .ak-kv dt {
+        color: var(--ak-color-muted);
+        font-size: .85rem;
+    }
+
+    .ak-kv dd {
+        margin: 0 0 10px;
+    }
+
+/* اللغة */
+.ak-lang {
+    display: inline-flex;
+    gap: 4px;
+}
+
+.ak-lang-btn {
+    background: none;
+    border: 1px solid var(--ak-color-border);
+    color: var(--ak-color-muted);
+    border-radius: 999px;
+    padding: 2px 10px;
+    font: inherit;
+    font-size: .8rem;
+    cursor: pointer;
+}
+
+    .ak-lang-btn[aria-pressed="true"] {
+        color: var(--ak-color-primary-contrast);
+        background: var(--ak-color-primary);
+        border-color: var(--ak-color-primary);
+    }
+
+/* مؤشر التحميل (يفضل شغالاً حتى مع تقليل الحركة لأنه وظيفي) */
+.ak-spinner {
+    width: 1em;
+    height: 1em;
+    border: 2px solid currentColor;
+    border-inline-end-color: transparent;
+    border-radius: 50%;
+    animation: ak-spin .7s linear infinite;
+}
+
+@keyframes ak-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* حركات الدخول */
+@keyframes ak-fade {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes ak-fade-up {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes ak-scale {
+    from {
+        opacity: 0;
+        transform: scale(.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes ak-shake {
+    10%, 90% {
+        transform: translateX(-1px);
+    }
+
+    20%, 80% {
+        transform: translateX(2px);
+    }
+
+    30%, 50%, 70% {
+        transform: translateX(-4px);
+    }
+
+    40%, 60% {
+        transform: translateX(4px);
+    }
+}
+
+.ak-root[data-ak-enter="fade"] .ak-card {
+    animation: ak-fade var(--ak-dur) var(--ak-ease) both;
+}
+
+.ak-root[data-ak-enter="fade-up"] .ak-card {
+    animation: ak-fade-up calc(var(--ak-dur) * 1.5) var(--ak-ease) both;
+}
+
+.ak-root[data-ak-enter="scale"] .ak-card {
+    animation: ak-scale calc(var(--ak-dur) * 1.5) var(--ak-ease) both;
+}
+
+.ak-root[data-ak-motion="full"] .ak-alert--error {
+    animation: ak-shake calc(var(--ak-dur) * 2.5) both;
+}
+
+.ak-root[data-ak-motion="full"] .ak-btn--primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--ak-color-primary) 35%, transparent);
+}

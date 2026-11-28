@@ -1,0 +1,101 @@
+﻿@inherits AkComponentBase
+@inject IAuthKitApi Api
+@inject NavigationManager Nav
+@inject AuthKitUiOptions Options
+
+<AkShell Title="@L["confirm.title"]" Embedded="Embedded">
+    @switch (_phase)
+    {
+        case Phase.Working:
+            <p class="ak-subtitle" role="status"><span class="ak-spinner" aria-hidden="true"></span> @L["confirm.working"]</p>
+            break;
+
+        case Phase.Done:
+            <div class="ak-alert ak-alert--success" role="status">@L["confirm.done"]</div>
+            <div class="ak-footer"><a class="ak-link" href="@Options.Routes.Login">@L["common.back_to_login"]</a></div>
+            break;
+
+        default:
+            <AkErrorAlert Error="_error" />
+
+            @if (_resent)
+            {
+                <div class="ak-alert ak-alert--success" role="status">@L["confirm.resent"]</div>
+            }
+            else
+            {
+                <p class="ak-hint">@L["confirm.expired_hint"]</p>
+                <form class="ak-form" @onsubmit="ResendAsync" @onsubmit:preventDefault novalidate>
+                    <AkField Id="ak-confirm-email" Label="@L["common.email"]" Type="AkFieldType.Email" Required="true"
+                             Autocomplete="email" @bind-Value="_resendEmail" Error="@_resendError" />
+                    <AkSubmit Busy="_busy" Text="@L["confirm.resend"]" />
+                </form>
+            }
+            break;
+    }
+</AkShell>
+
+@code {
+    private enum Phase { Working, Done, Failed }
+
+    [Parameter] public string? UserId { get; set; }
+    [Parameter] public string? Token { get; set; }
+    [Parameter] public bool Embedded { get; set; }
+
+    private Phase _phase = Phase.Working;
+    private ApiError? _error;
+    private string _resendEmail = "";
+    private string? _resendError;
+    private bool _started;
+    private bool _cleanUrl;
+    private bool _resent;
+    private bool _busy;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        if (string.IsNullOrEmpty(UserId)) { UserId = AkUrl.Query(Nav, "userId"); _cleanUrl |= UserId is not null; }
+        if (string.IsNullOrEmpty(Token)) { Token = AkUrl.Query(Nav, "token"); _cleanUrl |= Token is not null; }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _started) return;
+        _started = true;
+
+        if (_cleanUrl)
+            Nav.NavigateTo(AkUrl.WithoutQuery(Nav), new NavigationOptions { ReplaceHistoryEntry = true });
+
+        if (string.IsNullOrWhiteSpace(UserId) || string.IsNullOrWhiteSpace(Token))
+        {
+            _error = ApiError.Local(400, "invalid_link");
+            _phase = Phase.Failed;
+        }
+        else
+        {
+            var result = await Api.ConfirmEmailAsync(UserId, Token);
+            if (result.IsSuccess) _phase = Phase.Done;
+            else { _error = result.Error; _phase = Phase.Failed; }
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task ResendAsync()
+    {
+        if (_busy) return;
+
+        _resendError = AkValidation.Email(L, _resendEmail);
+        if (_resendError is not null) return;
+
+        _busy = true;
+        try
+        {
+            var result = await Api.ResendConfirmationAsync(_resendEmail.Trim());
+            if (result.IsSuccess) _resent = true;
+            else _error = result.Error;
+        }
+        finally { _busy = false; }
+    }
+}

@@ -1,0 +1,66 @@
+﻿@inherits AkComponentBase
+
+<div class="ak-field @(string.IsNullOrEmpty(Error) ? "" : "ak-field--error")">
+    <label class="ak-label" for="@Id">
+        @Label
+        @if (Required)
+        {
+            <span class="ak-req" aria-hidden="true">*</span>
+        }
+    </label>
+
+    <div class="ak-input-wrap">
+        <input id="@Id" class="@InputClass" type="@InputType" value="@Value" @oninput="OnInput"
+               autocomplete="@Autocomplete" maxlength="@MaxLength"
+               aria-required="@(Required ? "true" : null)"
+               aria-invalid="@(string.IsNullOrEmpty(Error) ? null : "true")"
+               aria-describedby="@(string.IsNullOrEmpty(Error) ? null : Id + "-err")" />
+
+        @if (IsPassword)
+        {
+            <button type="button" class="ak-reveal" @onclick="ToggleReveal"
+                    aria-label="@(_revealed ? L["common.hide_password"] : L["common.show_password"])"
+                    aria-pressed="@(_revealed ? "true" : "false")">
+                @(_revealed ? L["common.hide"] : L["common.show"])
+            </button>
+        }
+    </div>
+
+    @if (!string.IsNullOrEmpty(Error))
+    {
+        <span id="@(Id)-err" class="ak-error-text" role="alert">@Error</span>
+    }
+    else if (!string.IsNullOrEmpty(Hint))
+    {
+        <span class="ak-hint">@Hint</span>
+    }
+</div>
+
+@code {
+    private bool _revealed;
+
+    [Parameter, EditorRequired] public string Id { get; set; } = default!;
+    [Parameter, EditorRequired] public string Label { get; set; } = default!;
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public AkFieldType Type { get; set; } = AkFieldType.Text;
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public string? Hint { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public string? Autocomplete { get; set; }
+    [Parameter] public int? MaxLength { get; set; }
+
+    private bool IsPassword => Type == AkFieldType.Password;
+    private string InputClass => IsPassword ? "ak-input ak-input--has-reveal" : "ak-input";
+
+    private string InputType => Type switch
+    {
+        AkFieldType.Email => "email",
+        AkFieldType.Phone => "tel",
+        AkFieldType.Password => _revealed ? "text" : "password",
+        _ => "text"
+    };
+
+    private Task OnInput(ChangeEventArgs e) => ValueChanged.InvokeAsync(e.Value?.ToString() ?? "");
+    private void ToggleReveal() => _revealed = !_revealed;
+}

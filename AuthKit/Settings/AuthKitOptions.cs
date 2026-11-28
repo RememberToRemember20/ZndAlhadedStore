@@ -9,7 +9,7 @@ namespace AuthKit.Settings
     {
        
         public bool SendConfirmationEmailOnRegister { get; set; }
-
+        public TimeSpan EmailCooldown { get; set; } = TimeSpan.FromSeconds(60);
         public int ExpiredTokenRetentionDays { get; set; } = 30;
 
         /// الفاصل بين عمليات التنظيف. TimeSpan.Zero يعطّل التنظيف.

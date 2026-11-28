@@ -1,4 +1,5 @@
 using AuthKit.Api.Extensions;
+using AuthKit.Api.Options;
 using AuthKit.Extensions;
 using FluentValidation;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -19,7 +20,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers().AddAuthKitApi();
+
+builder.Services.AddControllers().AddAuthKitApi(o => o.RefreshTokenDelivery = AkRefreshDelivery.Both);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("ZndAlHaded")));
@@ -43,6 +45,7 @@ builder.Services.AddIdentityServices();
 builder.Services.AddApplicationServices();
 builder.Services.AddAuthRateLimiting();
 builder.Services.AddEmailSending(builder.Configuration, builder.Environment);
+builder.Services.AddConfiguredCors(builder.Configuration, allowCredentials: true);
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -52,8 +55,10 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
         options.KnownProxies.Add(IPAddress.Parse(proxy));
 });
 
-var app = builder.Build();
 
+var app = builder.Build();
+app.Logger.LogInformation("CORS origins: [{Origins}]",
+    string.Join(", ", app.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? []));
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -66,6 +71,7 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 });
 await app.Services.SeedAuthKitAsync();
 app.UseExceptionHandler();
+app.UseAuthKitSecurityHeaders();
 
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {

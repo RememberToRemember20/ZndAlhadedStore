@@ -3,12 +3,12 @@ using FluentValidation;
 
 namespace AuthKit.Features.Auth.RefreshToken.Command
 {
-    internal class RefreshTokenCommandValidator : AbstractValidator<RefreshTokenCommand>
+    internal sealed class RefreshTokenCommandValidator : AbstractValidator<RefreshTokenCommand>
     {
         public RefreshTokenCommandValidator()
         {
-            RuleFor(x => x.AccessToken).NotEmpty().WithErrorCode(ValidationCodes.AccessTokenRequired);
-            RuleFor(x => x.RefreshToken).NotEmpty().WithErrorCode(ValidationCodes.RefreshTokenRequired);
+            RuleFor(x => x.RefreshToken).NotEmpty().MaximumLength(512);
+            RuleFor(x => x.AccessToken).MaximumLength(4096);
         }
     }
 }

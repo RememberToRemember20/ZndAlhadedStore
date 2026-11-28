@@ -1,5 +1,7 @@
 <Solution>
   <Project Path="AuthKit.Api/AuthKit.Api.csproj" Id="7b25735a-aef7-48f0-b29f-a681a2d11fb7" />
+  <Project Path="AuthKit.Blazor/AuthKit.Blazor.csproj" Id="55e38e2a-2cc0-444a-b315-6f968cf78192" />
+  <Project Path="AuthKit.Demo/AuthKit.Demo.csproj" Id="c5bfd256-f732-4d33-bf05-29da63beb235" />
   <Project Path="AuthKit/AuthKit.csproj" Id="df548804-1927-4cb4-939d-78049b040d38" />
   <Project Path="Shared/Shared.csproj" Id="06a2b7e8-fdbc-42f9-ab84-3838fdeca040" />
   <Project Path="ZndAlhadedStore/ZndAlhadedStore.csproj" />

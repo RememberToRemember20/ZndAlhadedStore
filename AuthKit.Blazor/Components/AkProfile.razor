@@ -1,0 +1,74 @@
+﻿@inherits AkComponentBase
+@inject IAuthKitApi Api
+@inject AuthKitSession Session
+@inject NavigationManager Nav
+@inject AuthKitUiOptions Options
+
+<AkShell Title="@L["profile.title"]" Embedded="Embedded">
+    @if (_loading)
+    {
+        <p class="ak-subtitle" role="status">@L["common.loading"]</p>
+    }
+    else if (_error is not null)
+    {
+        <AkErrorAlert Error="_error" />
+    }
+    else if (_me is not null)
+    {
+        <dl class="ak-kv">
+            <dt>@L["profile.email"]</dt>
+            <dd>@_me.Email</dd>
+
+            <dt>@L["profile.status"]</dt>
+            <dd>@(_me.EmailConfirmed ? L["profile.confirmed"] : L["profile.unconfirmed"])</dd>
+
+            <dt>@L["profile.roles"]</dt>
+            <dd><AkBadges Items="_me.Roles" /></dd>
+
+            <dt>@L["profile.permissions"]</dt>
+            <dd><AkBadges Items="_me.Permissions" /></dd>
+        </dl>
+
+        @ChildContent?.Invoke(_me)
+
+        <div class="ak-form">
+            <button type="button" class="ak-btn ak-btn--ghost" @onclick="() => SignOutAsync(false)">@L["common.sign_out"]</button>
+            <button type="button" class="ak-btn ak-btn--ghost" @onclick="() => SignOutAsync(true)">@L["common.sign_out_all"]</button>
+        </div>
+    }
+</AkShell>
+
+@code {
+    [Parameter] public bool Embedded { get; set; } = true;
+    [Parameter] public RenderFragment<AkMe>? ChildContent { get; set; }
+    [Parameter] public EventCallback OnSignedOut { get; set; }
+
+    private AkMe? _me;
+    private ApiError? _error;
+    private bool _loading = true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var result = await Api.GetMeAsync();
+        _loading = false;
+
+        if (result.IsSuccess) _me = result.Value;
+        else if (result.Error is { Status: 401 }) GoToLogin();
+        else _error = result.Error;
+
+        StateHasChanged();
+    }
+
+    private async Task SignOutAsync(bool allDevices)
+    {
+        await Session.SignOutAsync(allDevices);
+
+        if (OnSignedOut.HasDelegate) await OnSignedOut.InvokeAsync();
+        else Nav.NavigateTo(Options.Routes.Login);
+    }
+
+    private void GoToLogin() =>
+        Nav.NavigateTo($"{Options.Routes.Login}?returnUrl={Uri.EscapeDataString("/" + Nav.ToBaseRelativePath(Nav.Uri))}");
+}

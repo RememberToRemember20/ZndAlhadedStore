@@ -1,0 +1,12 @@
+﻿<button type="submit" class="ak-btn ak-btn--primary" disabled="@Busy">
+    @if (Busy)
+    {
+        <span class="ak-spinner" aria-hidden="true"></span>
+    }
+    @Text
+</button>
+
+@code {
+    [Parameter] public bool Busy { get; set; }
+    [Parameter, EditorRequired] public string Text { get; set; } = default!;
+}

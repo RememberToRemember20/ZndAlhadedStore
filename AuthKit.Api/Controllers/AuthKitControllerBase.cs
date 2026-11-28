@@ -1,6 +1,9 @@
-﻿using AuthKit.Api.Options;
+﻿using AuthKit.Api.Contracts;
+using AuthKit.Api.Cookies;
+using AuthKit.Api.Options;
 using AuthKit.Api.Proplem;
 using AuthKit.Common;
+using AuthKit.Models;
 using AuthKit.Services.Interfaces;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -18,6 +21,39 @@ namespace AuthKit.Api.Controllers
     [ApiController]
     public abstract class AuthKitControllerBase : ControllerBase
     {
+        internal RefreshCookieService Cookies => HttpContext.RequestServices.GetRequiredService<RefreshCookieService>();
+
+        /// رفض بدري لطلبات الكوكي غير الموثوقة. يرجع null لو كل شيء سليم
+        protected IActionResult? Untrusted() =>
+            Cookies.CookieRequested(HttpContext) && !Cookies.IsTrustedRequest(HttpContext)
+                ? Failure(Result.Failure(AuthErrorCodes.CsrfRejected))
+                : null;
+
+        protected IActionResult FromTokens(Result<AuthResult> result)
+        {
+            if (!result.IsSuccess) return Failure(result);
+
+            Response.Headers.CacheControl = "no-store";
+            return Ok(Deliver(result.Value!));
+        }
+
+        protected IActionResult FromRegister(Result<RegisterResult> result)
+        {
+            if (!result.IsSuccess) return Failure(result);
+
+            Response.Headers.CacheControl = "no-store";
+            var value = result.Value!;
+            return Ok(new RegisterResponse(value.Tokens is null ? null : Deliver(value.Tokens), value.RequiresEmailConfirmation));
+        }
+
+        private TokenResponse Deliver(AuthResult tokens)
+        {
+            if (!Cookies.CookieRequested(HttpContext))
+                return new TokenResponse(tokens.AccessToken, tokens.RefreshToken, tokens.AccessTokenExpiresAt);
+
+            Cookies.Write(HttpContext, tokens.RefreshToken);   // الـ Refresh Token ما بيطلعش في الجسم أبداً
+            return new TokenResponse(tokens.AccessToken, null, tokens.AccessTokenExpiresAt);
+        }
         private ISender? _sender;
         protected ISender Sender => _sender ??= HttpContext.RequestServices.GetRequiredService<ISender>();
 

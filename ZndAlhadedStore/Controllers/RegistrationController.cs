@@ -17,16 +17,8 @@ namespace ZndAlhadedStore.Controllers
         [EnableRateLimiting(AuthKitRateLimitPolicies.Sensitive)]
         public async Task<IActionResult> Register(RegisterRequest request)
         {
-            var user = new ApplicationUser
-            {
-                UserName = request.Email,
-                Email = request.Email,
-                FullName = request.FullName,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            return FromResult(await Sender.Send(new RegisterCommand<ApplicationUser, string>(user, request.Password)));
+            var user = new ApplicationUser { UserName = request.Email, Email = request.Email, FullName = request.FullName, IsActive = true };
+            return Untrusted() ?? FromRegister(await Sender.Send(new RegisterCommand<ApplicationUser, string>(user, request.Password)));
         }
     }
 }

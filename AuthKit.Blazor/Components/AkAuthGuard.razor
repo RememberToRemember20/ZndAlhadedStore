@@ -1,0 +1,66 @@
+﻿@inherits AkComponentBase
+@inject NavigationManager Nav
+@inject AuthKitUiOptions Options
+
+@if (_state == GuardState.Allowed)
+{
+    @ChildContent
+}
+else if (_state == GuardState.Forbidden)
+{
+    if (Forbidden is not null)
+    {
+        @Forbidden
+    }
+    else
+    {
+        <div class="ak-alert ak-alert--error" role="alert">@L["error.forbidden"]</div>
+    }
+}
+else if (Loading is not null)
+{
+    @Loading
+}
+
+@code {
+    private enum GuardState { Loading, Allowed, Forbidden }
+
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+
+    /// صلاحية واحدة مطلوبة. أو AnyOf لأي واحدة من عدة. من غير الاتنين: يكفي تسجيل الدخول
+    [Parameter] public string? Permission { get; set; }
+    [Parameter] public IEnumerable<string>? AnyOf { get; set; }
+    [Parameter] public bool RedirectToLogin { get; set; } = true;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Loading { get; set; }
+    [Parameter] public RenderFragment? Forbidden { get; set; }
+
+    private GuardState _state = GuardState.Loading;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (AuthState is null)
+            throw new InvalidOperationException("AkAuthGuard needs the cascading authentication state. Register the UI with AddAuthKitUi(...).");
+
+        var user = (await AuthState).User;
+
+        if (user.Identity?.IsAuthenticated != true)
+        {
+            _state = GuardState.Loading;
+
+            if (RedirectToLogin)
+                Nav.NavigateTo($"{Options.Routes.Login}?returnUrl={Uri.EscapeDataString("/" + Nav.ToBaseRelativePath(Nav.Uri))}");
+
+            return;
+        }
+
+        var allowed = (Permission, AnyOf) switch
+        {
+            (null, null) => true,
+            _ => (Permission is not null && user.HasClaim(AkClaims.Permission, Permission))
+                 || (AnyOf?.Any(p => user.HasClaim(AkClaims.Permission, p)) ?? false)
+        };
+
+        _state = allowed ? GuardState.Allowed : GuardState.Forbidden;
+    }
+}

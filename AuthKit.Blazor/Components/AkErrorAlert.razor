@@ -1,0 +1,22 @@
+﻿@inherits AkComponentBase
+@using AuthKit.Blazor.Http
+
+@if (Error is not null)
+{
+    <div class="ak-alert ak-alert--error" role="alert">
+        @L.Error(Error)
+        @if (Error.DetailCodes.Count > 0)
+        {
+            <ul class="ak-error-list">
+                @foreach (var code in Error.DetailCodes.Distinct())
+                {
+                    <li>@L.Error(code)</li>
+                }
+            </ul>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public ApiError? Error { get; set; }
+}
